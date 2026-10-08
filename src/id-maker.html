@@ -102,7 +102,7 @@ const DEF = {
   ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
   halftone:true, htSize:55, htAlpha:70, clusters:0, marks:false, readout:false, rail:true, sideLabel:'',
   band:false, bandNoise:60,
-  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', peek:true, peekX:15.45, peekY:-0.3, peekSize:118, peekHands:true, connectTitle:'SOCIALS', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
+  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', peek:true, peekX:15.45, peekY:-0.3, peekSize:105, peekHands:true, connectTitle:'SOCIALS', iconStyle:'pixel', peekAt:'first', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
   linkedin:'linkedin.com/in/yourname', github:'github.com/yourname', facebook:'facebook.com/yourorg', instagram:'@yourorg', discord:'', website:'yourorg.dev', email:'yourname@email.com',
   asset:true, assetOutline:true, assetX:11.5, assetY:21, assetScale:100, holder:false, connect:true, backInfo:'connect', job:true, jobFont:'Space Grotesk', jobX:11.6, jobY:21.6, jobW:11, jobSize:58, jobShadow:false, jobCol:'#14092e', jobBg:'blur', jobBlur:45, jobTint:'#ffffff', jobTintA:45, jobPad:55, jobBorder:false,
   jobDesc:'Leader of the visual identity of the club. Oversees design, branding, and media production, and approves all materials before release.',
@@ -208,14 +208,14 @@ const SECTIONS = [
  { title:'Back side', items:[
    {k:'backTitle',t:'text',l:'Title (first word solid, rest outline)'},
    {k:'peek',t:'check',l:'Mascot peeking over the title'}, {k:'peekHands',t:'check',l:'Mascot hands on the letters'},
-   {k:'peekX',t:'range',min:2,max:22,step:0.1,l:'Mascot position (tiles)'}, {k:'peekY',t:'range',min:-1.5,max:1.5,step:0.05,l:'Mascot higher / lower'},
+   {k:'peekAt',t:'select',l:'Mascot peeks over',o:[['first','The first letter (M)'],['last','The last letter of the first word'],['custom','Custom position (slider)']]}, {k:'peekX',t:'range',min:2,max:22,step:0.1,l:'Custom mascot position (tiles)'}, {k:'peekY',t:'range',min:-1.5,max:1.5,step:0.05,l:'Mascot higher / lower'},
    {k:'peekSize',t:'range',min:50,max:160,step:1,l:'Mascot size',u:'%'},
    {t:'file',id:'peekFile',l:'Replace mascot image (head, transparent PNG)',h:'peekImg'}, {t:'btn',l:'Use default mascot',h:'noPeek',alt:true}, {k:'term',t:'text',l:'Top left text (term / year)'},
    {k:'qrMode',t:'select',l:'QR content',o:[['link','A link (below)'],['vcard','Contact card (vCard from your details)'],['id','ID number only']]},
    {k:'qr',t:'text',l:'QR link'}, {k:'qrLabel',t:'text',l:'Text under the QR'}, {k:'qrSub',t:'text',l:'Small line under that (blank = hide)'},
    {k:'qrStyle',t:'select',l:'QR pixel style',o:[['bevel','Bevel pixels'],['pixel','Flat pixels'],['dots','Dots']]},
    {k:'qrShade',t:'check',l:'Purple gradient shader on the QR'}, {k:'qrLogo',t:'check',l:'Logo in the QR center (uses header logo)'}, {k:'qrLogoSize',t:'range',min:60,max:120,step:1,l:'QR center logo size',u:'%'}, {k:'qrGlow',t:'check',l:'Pixel glow around the QR'},
-   {k:'connectTitle',t:'text',l:'Socials heading'}, {t:'note',l:'Upload each platform\'s official icon (PNG) to replace the letter tiles.'}, {t:'btn',l:'Remove all social icons',h:'noIcons',alt:true},
+   {k:'connectTitle',t:'text',l:'Socials heading'}, {k:'iconStyle',t:'select',l:'Social icon style',o:[['pixel','Pixel icons'],['letters','Letter tiles']]}, {t:'note',l:'Upload each platform\'s official icon (PNG) to replace the letter tiles.'}, {t:'btn',l:'Remove all social icons',h:'noIcons',alt:true},
    {k:'holder',t:'check',l:'Holder details (name, position, ID, section)'},
    {k:'job',t:'check',l:'Job description (top layer, drag it in Design view)'}, {k:'jobDesc',t:'area',l:'Job description'},
    {k:'jobFont',t:'select',l:'Job description font',o:FONTS}, {k:'jobCol',t:'color',l:'Job description color'},
@@ -667,6 +667,19 @@ function drawQRArt(x, text, X, Y, size, W) {
   }
   return n;
 }
+const PIX_ICONS = {
+  linkedin: ['.........','...###...','...#.#...','#########','#########','####.####','#########','#########','.........'],
+  github: ['.........','.........','..#..##..','.#...#.#.','#...#...#','.#.#...#.','..##..#..','.........','.........'],
+  facebook: ['.........','.##...##.','.##...##.','.........','###...###','###...###','###...###','.........','.........'],
+  instagram: ['.........','..##.....','#########','###...###','##..#..##','###...###','#########','.........','.........'],
+  discord: ['.........','.#######.','#########','##.#.#.##','#########','.#######.','.##......','.#.......','.........'],
+  website: ['...###...','.##.#.##.','.#..#..#.','#########','#...#...#','#########','.#..#..#.','.##.#.##.','...###...'],
+  email: ['.........','#########','##.....##','#.#...#.#','#..#.#..#','#...#...#','#.......#','#########','.........']
+};
+function pixIcon(x, k, X, Y, size, col) {
+  const m = PIX_ICONS[k]; if (!m) return; const c = size / 9; x.fillStyle = col;
+  m.forEach((row, r) => [...row].forEach((v, i) => { if (v === '#') x.fillRect(Math.round(X + i * c), Math.round(Y + r * c), Math.ceil(c), Math.ceil(c)); }));
+}
 const icons = {};
 const MONO = [['linkedin', 'IN'], ['github', 'GH'], ['facebook', 'FB'], ['instagram', 'IG'], ['discord', 'DC'], ['website', 'WW'], ['email', 'EM']];
 function drawBack(W, H) {
@@ -694,7 +707,10 @@ function drawBack(W, H) {
   const pim = peekImg || alfDefault;
   if (S.peek && pim && pim.complete !== false && pim.width) {
     x.font = `700 ${p}px "${S.nameFont}"`; const capTop = tY - x.measureText('M').actualBoundingBoxAscent;
-    const hw = tw * 3.4 * S.peekSize / 100, hh = hw * pim.height / pim.width, cx = tx(S.peekX);
+    const hw = tw * 3.4 * S.peekSize / 100, hh = hw * pim.height / pim.width;
+    let cx = tx(S.peekX);
+    if (S.peekAt === 'first') cx = tX + x.measureText(w1.charAt(0)).width / 2 + tw * (S.peekX - 15.45) * 0;
+    else if (S.peekAt === 'last') { const wl = x.measureText(w1).width, lc = x.measureText(w1.slice(-1)).width; cx = tX + wl - lc / 2; }
     const top = capTop - hh * 0.64 - th * 0.12 + th * S.peekY;
     const pc = mk(W, Math.ceil(capTop + th)), px2 = pc.getContext('2d');
     px2.drawImage(pim, cx - hw / 2, top, hw, hh);
@@ -761,7 +777,8 @@ function drawBack(W, H) {
       const yy = r0 + i, ic = icons[k];
       if (ic) { const bs = T(2) - T(1), pd = bs * 0.08, kk = Math.min((bs - pd * 2) / ic.width, (V(yy + 1) - V(yy) - pd * 2) / ic.height); x.drawImage(ic, T(1) + (bs - ic.width * kk) / 2, V(yy) + (V(yy + 1) - V(yy) - ic.height * kk) / 2, ic.width * kk, ic.height * kk); x.textBaseline = 'middle'; }
       else { x.fillStyle = i % 2 ? acc : ink; x.fillRect(T(1), V(yy), T(2) - T(1), V(yy + 1) - V(yy));
-      x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; fit(x, m, S.tagFont, 700, tw * 0.8, th * 0.46, th * 0.2); x.fillText(m, (T(1) + T(2)) / 2, (V(yy) + V(yy + 1)) / 2 + th * 0.03); }
+      if (S.iconStyle === 'pixel') { const bs = Math.min(T(2) - T(1), V(yy + 1) - V(yy)), isz = bs * 0.7; pixIcon(x, k, T(1) + (T(2) - T(1) - isz) / 2, V(yy) + (V(yy + 1) - V(yy) - isz) / 2, isz, '#fff'); x.textBaseline = 'middle'; }
+      else { x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; fit(x, m, S.tagFont, 700, tw * 0.8, th * 0.46, th * 0.2); x.fillText(m, (T(1) + T(2)) / 2, (V(yy) + V(yy + 1)) / 2 + th * 0.03); } }
       x.textAlign = 'left'; x.fillStyle = ink; fit(x, S[k], S.infoFont, 400, tw * 8.2, th * 0.42, th * 0.24); x.fillText(S[k], tx(2.45), (V(yy) + V(yy + 1)) / 2 + th * 0.03); x.textBaseline = 'alphabetic';
     });
   }
