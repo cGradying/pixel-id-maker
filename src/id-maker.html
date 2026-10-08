@@ -80,6 +80,8 @@ main { flex:1; min-width:0; display:flex; flex-direction:column; }
 const BG_SRC = "__BG__";
 const ALF_SRC = "__ALF__";
 const alfDefault = new Image(); alfDefault.src = ALF_SRC;
+const ALF_HALF_SRC = "__ALFHALF__";
+const alfHalf = new Image(); alfHalf.src = ALF_HALF_SRC;
 const BGW = 637, BGH = 1012;
 const $ = id => document.getElementById(id);
 const smooth = (a,b,x) => { if (a===b) return x<a?0:1; const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
@@ -102,7 +104,7 @@ const DEF = {
   ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
   halftone:true, htSize:55, htAlpha:70, clusters:0, marks:false, readout:false, rail:true, sideLabel:'',
   band:false, bandNoise:60,
-  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', peek:true, peekX:15.45, peekY:-0.3, peekSize:105, peekHands:true, connectTitle:'SOCIALS', iconStyle:'pixel', peekAt:'first', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
+  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', peek:true, peekStyle:'half', peekX:15.45, peekY:0, peekSize:92, peekHands:true, connectTitle:'SOCIALS', iconStyle:'pixel', peekAt:'first', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
   linkedin:'linkedin.com/in/yourname', github:'github.com/yourname', facebook:'facebook.com/yourorg', instagram:'@yourorg', discord:'', website:'yourorg.dev', email:'yourname@email.com',
   asset:true, assetOutline:true, assetX:11.5, assetY:21, assetScale:100, holder:false, connect:true, backInfo:'connect', job:true, jobFont:'Space Grotesk', jobX:11.6, jobY:21.6, jobW:11, jobSize:58, jobShadow:false, jobCol:'#14092e', jobBg:'blur', jobBlur:45, jobTint:'#ffffff', jobTintA:45, jobPad:55, jobBorder:false,
   jobDesc:'Leader of the visual identity of the club. Oversees design, branding, and media production, and approves all materials before release.',
@@ -208,7 +210,7 @@ const SECTIONS = [
  { title:'Back side', items:[
    {k:'backTitle',t:'text',l:'Title (first word solid, rest outline)'},
    {k:'peek',t:'check',l:'Mascot peeking over the title'}, {k:'peekHands',t:'check',l:'Mascot hands on the letters'},
-   {k:'peekAt',t:'select',l:'Mascot peeks over',o:[['first','The first letter (M)'],['last','The last letter of the first word'],['custom','Custom position (slider)']]}, {k:'peekX',t:'range',min:2,max:22,step:0.1,l:'Custom mascot position (tiles)'}, {k:'peekY',t:'range',min:-1.5,max:1.5,step:0.05,l:'Mascot higher / lower'},
+   {k:'peekStyle',t:'select',l:'Mascot pose',o:[['half','Half body in a pixel suit, holding the letter'],['head','Head only, peeking']]}, {k:'peekAt',t:'select',l:'Mascot peeks over',o:[['first','The first letter (M)'],['last','The last letter of the first word'],['custom','Custom position (slider)']]}, {k:'peekX',t:'range',min:2,max:22,step:0.1,l:'Custom mascot position (tiles)'}, {k:'peekY',t:'range',min:-1.5,max:1.5,step:0.05,l:'Mascot higher / lower'},
    {k:'peekSize',t:'range',min:50,max:160,step:1,l:'Mascot size',u:'%'},
    {t:'file',id:'peekFile',l:'Replace mascot image (head, transparent PNG)',h:'peekImg'}, {t:'btn',l:'Use default mascot',h:'noPeek',alt:true}, {k:'term',t:'text',l:'Top left text (term / year)'},
    {k:'qrMode',t:'select',l:'QR content',o:[['link','A link (below)'],['vcard','Contact card (vCard from your details)'],['id','ID number only']]},
@@ -704,26 +706,27 @@ function drawBack(W, H) {
   let tw0 = meas(); if (tw0 > tw * 22) { p *= tw * 22 / tw0; tw0 = meas(); }
   const tX = (W - tw0) / 2, tY = ty(5.6);
   let peekHands = null;
-  const pim = peekImg || alfDefault;
-  if (S.peek && pim && pim.complete !== false && pim.width) {
-    x.font = `700 ${p}px "${S.nameFont}"`; const capTop = tY - x.measureText('M').actualBoundingBoxAscent;
-    const hw = tw * 3.4 * S.peekSize / 100, hh = hw * pim.height / pim.width;
+  const half = S.peekStyle === 'half' && !peekImg, pim = peekImg || (half ? alfHalf : alfDefault);
+  if (S.peek && pim && pim.width) {
+    x.font = `700 ${p}px "${S.nameFont}"`; const capTop = tY - x.measureText('M').actualBoundingBoxAscent, mw = x.measureText(w1.charAt(0)).width;
+    const hw = tw * (half ? 3.5 : 3.4) * S.peekSize / 100, hh = hw * pim.height / pim.width;
     let cx = tx(S.peekX);
-    if (S.peekAt === 'first') cx = tX + x.measureText(w1.charAt(0)).width / 2 + tw * (S.peekX - 15.45) * 0;
+    if (S.peekAt === 'first') { const mm = x.measureText(w1.charAt(0)); cx = tX + (mm.actualBoundingBoxRight - mm.actualBoundingBoxLeft) / 2; }
     else if (S.peekAt === 'last') { const wl = x.measureText(w1).width, lc = x.measureText(w1.slice(-1)).width; cx = tX + wl - lc / 2; }
-    const top = capTop - hh * 0.64 - th * 0.12 + th * S.peekY;
-    const pc = mk(W, Math.ceil(capTop + th)), px2 = pc.getContext('2d');
+    const top = half ? capTop - hh * 0.6 + th * S.peekY : capTop - hh * 0.64 - th * 0.12 + th * S.peekY;
+    const cut = half ? tY + th * 0.15 : capTop;
+    const pc = mk(W, Math.ceil(cut + th)), px2 = pc.getContext('2d');
     px2.drawImage(pim, cx - hw / 2, top, hw, hh);
-    const gm = px2.createLinearGradient(0, capTop - th * 0.12, 0, capTop + th * 0.12); gm.addColorStop(0, 'rgba(0,0,0,0)'); gm.addColorStop(1, 'rgba(0,0,0,1)');
-    px2.globalCompositeOperation = 'destination-out'; px2.fillStyle = gm; px2.fillRect(0, capTop - th * 0.12, W, pc.height); x.drawImage(pc, 0, 0);
-    peekHands = { cx, y: capTop, hw };
+    const gm = px2.createLinearGradient(0, cut - th * 0.12, 0, cut + th * 0.12); gm.addColorStop(0, 'rgba(0,0,0,0)'); gm.addColorStop(1, 'rgba(0,0,0,1)');
+    px2.globalCompositeOperation = 'destination-out'; px2.fillStyle = gm; px2.fillRect(0, cut - th * 0.12, W, pc.height); x.drawImage(pc, 0, 0);
+    peekHands = { cx, y: capTop, hw, spread: half ? mw * 0.42 : hw * 0.27, half };
   }
   x.font = `700 ${p}px "${S.nameFont}"`; x.fillStyle = ink; x.fillText(w1, tX, tY); const a1 = x.measureText(w1 + ' ').width;
   if (w2) { x.font = `400 ${p}px "${S.ghostFont}"`; x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = Math.max(1, W / 700); x.fillText(w2, tX + a1, tY); x.strokeText(w2, tX + a1, tY); }
   if (peekHands && S.peekHands) {
-    const { cx, y, hw } = peekHands, r = hw * 0.05, lw = Math.max(1, W / 480);
+    const { cx, y, hw, spread } = peekHands, r = hw * 0.05, lw = Math.max(1, W / 480);
     [-1, 1].forEach(sd => {
-      const hx = cx + sd * hw * 0.27;
+      const hx = cx + sd * spread;
       x.fillStyle = '#1b2133'; x.strokeStyle = '#0d0f17'; x.lineWidth = lw;
       x.beginPath(); x.ellipse(hx, y - r * 0.35, r * 2.0, r * 1.05, 0, Math.PI, 0); x.closePath(); x.fill(); x.stroke();
       for (let i = -1; i <= 1; i++) { x.beginPath(); x.arc(hx + i * r * 1.2, y + r * 0.15, r * 0.72, 0, 6.2832); x.fill(); x.stroke(); }
