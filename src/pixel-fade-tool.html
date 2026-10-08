@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixel Fade Tool v3</title>
+<style>
+  :root { --bg:#14111c; --panel:#1d1829; --line:#352c4d; --txt:#ece8f7; --mut:#9a90b8; --acc:#a66bff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--txt); display:flex; height:100vh; }
+  aside { width:320px; padding:18px; background:var(--panel); border-right:1px solid var(--line); overflow:auto; flex:none; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  p.sub { margin:0 0 12px; color:var(--mut); font-size:12px; }
+  h2 { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin:18px 0 0; padding-top:12px; border-top:1px solid var(--line); }
+  label { display:block; margin:10px 0 3px; color:var(--mut); font-size:12px; }
+  label b { color:var(--txt); font-weight:600; float:right; }
+  input[type=range] { width:100%; accent-color:var(--acc); }
+  select { width:100%; background:#120f1b; color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:6px; }
+  input[type=color] { width:100%; height:34px; padding:2px; background:#120f1b; border:1px solid var(--line); border-radius:6px; }
+  .row { display:flex; align-items:center; gap:8px; margin-top:10px; color:var(--mut); font-size:12px; }
+  .chips { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .chip { flex:1; min-width:70px; padding:6px 4px; font-size:11px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--txt); cursor:pointer; margin:0; font-weight:500; }
+  button, .btn { display:block; width:100%; margin-top:10px; padding:10px; text-align:center; background:var(--acc); color:#12091f; font-weight:700; border:0; border-radius:8px; cursor:pointer; font-size:14px; }
+  .btn.alt, button.alt { background:transparent; color:var(--txt); border:1px solid var(--line); font-weight:500; }
+  main { flex:1; display:flex; align-items:center; justify-content:center; padding:16px; min-width:0; }
+  #stage { max-width:100%; max-height:calc(100vh - 32px); display:none; cursor:grab; touch-action:none; box-shadow:0 0 0 1px var(--line); }
+  #drop { border:2px dashed var(--line); border-radius:14px; padding:60px 40px; color:var(--mut); text-align:center; }
+  small { color:var(--mut); display:block; margin-top:10px; font-size:12px; }
+  #info { color:var(--mut); font-size:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Pixel Fade Tool</h1>
+  <p class="sub">Tiles follow the 637 x 1012 background's grid: 24 x 38.</p>
+  <label class="btn" style="margin-top:0">Choose photo (cutout PNG)<input id="file" type="file" accept="image/*" hidden></label>
+
+  <h2>Placement (or drag on the preview)</h2>
+  <label>Photo size <b id="v_psize"></b></label>
+  <input id="psize" type="range" min="20" max="140" value="62">
+  <label>Horizontal position <b id="v_px"></b></label>
+  <input id="px" type="range" min="-20" max="120" value="50" step="0.1">
+  <label>Vertical position <b id="v_py"></b></label>
+  <input id="py" type="range" min="-60" max="100" value="22" step="0.1">
+
+  <h2>Fade</h2>
+  <label>Fades out toward</label>
+  <select id="dir">
+    <option value="bottom">Bottom</option>
+    <option value="top">Top</option>
+    <option value="left">Left</option>
+    <option value="right">Right</option>
+  </select>
+  <label>Fade starts at <b id="v_start"></b></label>
+  <input id="start" type="range" min="0" max="100" value="38">
+  <label>Fully gone at <b id="v_end"></b></label>
+  <input id="end" type="range" min="0" max="100" value="92">
+  <label>Drip (uneven fade length per column) <b id="v_drip"></b></label>
+  <input id="drip" type="range" min="0" max="100" value="55">
+  <label>Pixelation starts later (less at the top) <b id="v_onset"></b></label>
+  <input id="onset" type="range" min="0" max="100" value="60">
+  <label>Tile detail (2x and 3x = smaller tiles, still on the grid) <b id="v_detail"></b></label>
+  <input id="detail" type="range" min="1" max="3" value="2">
+  <label>Randomness <b id="v_jit"></b></label>
+  <input id="jit" type="range" min="0" max="100" value="45">
+  <label>Feather (soft gradient inside the fade) <b id="v_feather"></b></label>
+  <input id="feather" type="range" min="0" max="100" value="30">
+  <label>Opacity steps (0 = smooth) <b id="v_steps"></b></label>
+  <input id="steps" type="range" min="0" max="12" value="0">
+
+  <h2>Full pixels (removes odd shapes)</h2>
+  <label>Full-pixel randomizer <b id="v_full"></b></label>
+  <input id="full" type="range" min="0" max="100" value="80">
+  <label>Color source: average to most visible <b id="v_dom"></b></label>
+  <input id="dom" type="range" min="0" max="100" value="100">
+  <label>Min photo coverage to keep a pixel <b id="v_mincov"></b></label>
+  <input id="mincov" type="range" min="0" max="60" value="15">
+
+  <h2>Color of the dissolving tiles</h2>
+  <label>Pixelate color as it fades <b id="v_pix"></b></label>
+  <input id="pix" type="range" min="0" max="100" value="85">
+  <label>Tint toward brand color <b id="v_tint"></b></label>
+  <input id="tint" type="range" min="0" max="100" value="55">
+  <input id="tintc" type="color" value="#9a5be8" style="margin-top:6px">
+  <div class="chips">
+    <button class="chip" data-c="#9a5be8">Match bg purple</button>
+    <button class="chip" data-c="#ff9900">AWS orange</button>
+    <button class="chip" data-c="#232f3e">Squid ink</button>
+  </div>
+  <label>Cut grid lines through fading tiles <b id="v_gap"></b></label>
+  <input id="gap" type="range" min="0" max="10" value="0">
+
+  <h2>Scattered leftovers (stray tiles past the fade)</h2>
+  <label>Amount <b id="v_scat"></b></label>
+  <input id="scat" type="range" min="0" max="100" value="40">
+  <label>Drift distance (rows) <b id="v_reach"></b></label>
+  <input id="reach" type="range" min="1" max="40" value="10">
+  <label>Leftover opacity <b id="v_sop"></b></label>
+  <input id="sop" type="range" min="10" max="100" value="75">
+  <button class="alt" id="shuffle">Shuffle randomness</button>
+
+  <h2>Grid and output</h2>
+  <label>Tiles across (background has 24) <b id="v_cols"></b></label>
+  <input id="cols" type="range" min="8" max="60" value="24">
+  <label>Background rows (background has 38) <b id="v_rows"></b></label>
+  <input id="rows" type="range" min="8" max="90" value="38">
+  <label>Fine-tune grid left/right <b id="v_offx"></b></label>
+  <input id="offx" type="range" min="-6" max="6" value="0.8" step="0.1">
+  <label>Fine-tune grid up/down <b id="v_offy"></b></label>
+  <input id="offy" type="range" min="-6" max="6" value="0.8" step="0.1">
+  <label>Output size <b id="v_scale"></b></label>
+  <input id="scale" type="range" min="1" max="5" value="3">
+  <div id="info"></div>
+  <div class="row"><input id="guide" type="checkbox"><label for="guide" style="margin:0">Show grid guide</label></div>
+  <label class="btn alt" style="margin-top:10px">Use a different background<input id="bgfile" type="file" accept="image/*" hidden></label>
+
+  <h2>Download</h2>
+  <button id="dl">Overlay PNG (transparent)</button>
+  <button id="dl2" class="alt">Full composite PNG (bg + photo)</button>
+  <small>Overlay: same size as the background. In Canva, put it at the exact same size and position as the background and the tiles line up. Composite: one flat image, use it as-is.</small>
+</aside>
+<main>
+  <div id="drop">Choose a photo to start</div>
+  <canvas id="stage"></canvas>
+</main>
+
+<script>
+const BG_SRC = "__BG__";
+const $ = id => document.getElementById(id);
+const ids = ['drip','onset','full','dom','mincov','scat','reach','sop','rows','offx','offy','psize','px','py','start','end','detail','jit','feather','steps','pix','tint','gap','cols','scale'];
+let photo = null, bg = new Image(), bgIsDefault = true;
+// built-in background is 637 x 1012: 24 columns (26.54px), 38 rows (26.63px), grid edges at k*pitch + 0.8px
+const out = document.createElement('canvas');
+const stage = $('stage');
+let dims = {W:0,H:0}, grid = null, seed = 1;
+
+const smooth = (a,b,x) => { if (a===b) return x<a?0:1; const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+const hash = (x,y) => { let h = (x*374761393 + y*668265263) | 0; h = (h ^ (h>>>13)) * 1274126177 | 0; return ((h ^ (h>>>16))>>>0) / 4294967295; };
+const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+
+function labels() {
+  $('v_psize').textContent = $('psize').value + '%';
+  $('v_px').textContent = (+$('px').value).toFixed(1) + '%';
+  $('v_py').textContent = (+$('py').value).toFixed(1) + '%';
+  $('v_start').textContent = $('start').value + '%';
+  $('v_end').textContent = $('end').value + '%';
+  $('v_detail').textContent = $('detail').value + 'x';
+  $('v_jit').textContent = $('jit').value + '%';
+  $('v_feather').textContent = $('feather').value + '%';
+  $('v_steps').textContent = $('steps').value;
+  $('v_pix').textContent = $('pix').value + '%';
+  $('v_tint').textContent = $('tint').value + '%';
+  $('v_gap').textContent = $('gap').value + 'px';
+  $('v_cols').textContent = $('cols').value;
+  $('v_rows').textContent = $('rows').value;
+  $('v_drip').textContent = $('drip').value + '%';
+  $('v_onset').textContent = $('onset').value + '%';
+  $('v_full').textContent = $('full').value + '%';
+  $('v_dom').textContent = $('dom').value + '%';
+  $('v_mincov').textContent = $('mincov').value + '%';
+  $('v_scat').textContent = $('scat').value + '%';
+  $('v_reach').textContent = $('reach').value;
+  $('v_sop').textContent = $('sop').value + '%';
+  $('v_offx').textContent = (+$('offx').value).toFixed(1) + 'px';
+  $('v_offy').textContent = (+$('offy').value).toFixed(1) + 'px';
+  $('v_scale').textContent = $('scale').value + 'x';
+}
+
+function geometry(W, H) {
+  const cols = +$('cols').value, sub = +$('detail').value, baseRows = +$('rows').value;
+  const S = W / bg.naturalWidth;               // offsets are in pixels of the original (1x) background
+  const ox = +$('offx').value * S, oy = +$('offy').value * S;
+  return { cols, baseRows, sub, gc: cols*sub, gr: baseRows*sub, ox, oy, cw: W/(cols*sub), ch: H/(baseRows*sub),
+           bw: W/cols, bh: H/baseRows };
+}
+
+function render() {
+  labels();
+  if (!photo || !bg.naturalWidth) return;
+  const S = +$('scale').value;
+  const W = Math.round(bg.naturalWidth*S), H = Math.round(bg.naturalHeight*S);
+  dims = {W,H};
+  const g = grid = geometry(W,H);
+  const {gc, gr, cw, ch, ox, oy} = g;
+  $('info').textContent = `Canvas ${W} x ${H}px. Background tile ${g.bw.toFixed(1)} x ${g.bh.toFixed(1)}px (${g.cols} x ${g.baseRows}). Dissolve tile ${cw.toFixed(1)} x ${ch.toFixed(1)}px.`;
+
+  const pw = W * (+$('psize').value/100);
+  const ph = pw * photo.height / photo.width;
+  const pxl = W * (+$('px').value/100) - pw/2;
+  const pyt = H * (+$('py').value/100);
+
+  const work = document.createElement('canvas'); work.width = W; work.height = H;
+  const wctx = work.getContext('2d', {willReadFrequently:true});
+  wctx.imageSmoothingQuality = 'high';
+  wctx.drawImage(photo, pxl, pyt, pw, ph);
+  const id = wctx.getImageData(0,0,W,H), d = id.data;
+
+  const xi = new Int32Array(W), yi = new Int32Array(H);
+  for (let x=0; x<W; x++) xi[x] = Math.min(gc-1, Math.max(0, Math.floor((x-ox)/cw)));
+  for (let y=0; y<H; y++) yi[y] = Math.min(gr-1, Math.max(0, Math.floor((y-oy)/ch)));
+
+  const N = gc*gr;
+  const sr = new Float64Array(N), sg = new Float64Array(N), sb = new Float64Array(N), sa = new Float64Array(N), n = new Float64Array(N);
+  for (let y=0; y<H; y++) {
+    const row = yi[y]*gc;
+    for (let x=0; x<W; x++) {
+      const ci = row + xi[x], i = (y*W+x)*4, a = d[i+3];
+      n[ci]++;
+      if (a) { sr[ci]+=d[i]*a; sg[ci]+=d[i+1]*a; sb[ci]+=d[i+2]*a; sa[ci]+=a; }
+    }
+  }
+
+  // tile colors: plain average, blended toward the most visible (dominant) color in the tile
+  const domMix = +$('dom').value/100;
+  const cr = new Float32Array(N), cg = new Float32Array(N), cb = new Float32Array(N);
+  for (let ci=0; ci<N; ci++) if (sa[ci] > 0) { cr[ci] = sr[ci]/sa[ci]; cg[ci] = sg[ci]/sa[ci]; cb[ci] = sb[ci]/sa[ci]; }
+  if (domMix > 0) {
+    const Q = 5, QB = Q*Q*Q;
+    const hist = new Float32Array(N*QB);
+    const bucket = i => (((d[i]*Q)>>8)*Q + ((d[i+1]*Q)>>8))*Q + ((d[i+2]*Q)>>8);
+    for (let y=0; y<H; y++) {
+      const row = yi[y]*gc;
+      for (let x=0; x<W; x++) { const i = (y*W+x)*4, a = d[i+3]; if (a) hist[(row+xi[x])*QB + bucket(i)] += a; }
+    }
+    const best = new Int16Array(N).fill(-1);
+    for (let ci=0; ci<N; ci++) if (sa[ci] > 0) {
+      let bi = 0, bv = -1; const o = ci*QB;
+      for (let b=0; b<QB; b++) if (hist[o+b] > bv) { bv = hist[o+b]; bi = b; }
+      best[ci] = bi;
+    }
+    const dr = new Float64Array(N), dg = new Float64Array(N), db = new Float64Array(N), dw = new Float64Array(N);
+    for (let y=0; y<H; y++) {
+      const row = yi[y]*gc;
+      for (let x=0; x<W; x++) {
+        const i = (y*W+x)*4, a = d[i+3];
+        if (!a) continue;
+        const ci = row + xi[x];
+        if (bucket(i) === best[ci]) { dr[ci]+=d[i]*a; dg[ci]+=d[i+1]*a; db[ci]+=d[i+2]*a; dw[ci]+=a; }
+      }
+    }
+    for (let ci=0; ci<N; ci++) if (dw[ci] > 0) {
+      cr[ci] += (dr[ci]/dw[ci] - cr[ci]) * domMix;
+      cg[ci] += (dg[ci]/dw[ci] - cg[ci]) * domMix;
+      cb[ci] += (db[ci]/dw[ci] - cb[ci]) * domMix;
+    }
+  }
+
+  const dir = $('dir').value;
+  const vertical = (dir === 'bottom' || dir === 'top');
+  const s0 = +$('start').value/100, s1 = Math.max(+$('end').value/100, s0+0.01);
+  const jit = +$('jit').value/100, feather = +$('feather').value/100, steps = +$('steps').value;
+  const pixAmt = +$('pix').value/100, tintAmt = +$('tint').value/100, tc = hex($('tintc').value);
+  const gap = +$('gap').value * (W/1000);
+
+  // drip: each column (row, for left/right fades) holds the photo a little longer, in smooth runs ~2 tiles wide
+  const onset = +$('onset').value/100, dripAmt = +$('drip').value/100;
+  const nk = vertical ? gc : gr, span = Math.max(1, 2*g.sub);
+  const anch = []; for (let j=0; j<=Math.ceil(nk/span)+2; j++) anch.push(hash(j+seed*13+700, 3));
+  const dripD = new Float32Array(nk);
+  for (let k=0; k<nk; k++) {
+    const f = k/span, j = Math.floor(f), tt = smooth(0, 1, f-j);
+    const r = anch[j] + (anch[j+1]-anch[j])*tt;
+    dripD[k] = dripAmt * (s1 - s0) * 0.8 * Math.pow(Math.max(0, (r-0.3)/0.7), 1.4);
+  }
+
+  const vAt = (x,y) => dir==='bottom' ? (y-pyt)/ph : dir==='top' ? 1-(y-pyt)/ph : dir==='left' ? 1-(x-pxl)/pw : (x-pxl)/pw;
+
+  const fullAmt = +$('full').value/100, minCov = +$('mincov').value/100;
+  const cA = new Float32Array(N), cU = new Float32Array(N), cTile = new Float32Array(N), cSolid = new Float32Array(N), cFull = new Uint8Array(N);
+  for (let cy=0; cy<gr; cy++) for (let cx=0; cx<gc; cx++) {
+    const ci = cy*gc+cx;
+    const v = vAt(ox+(cx+0.5)*cw, oy+(cy+0.5)*ch);
+    const u = smooth(s0 + dripD[vertical ? cx : cy], s1, v);   // 0 = untouched, 1 = gone
+    let a = (1-u)*(1+jit) - hash(cx+seed*97, cy+seed*31)*jit;               // random spread, exact 1 at start and 0 at end
+    a = Math.min(1, Math.max(0, a));
+    a = a*a*(3-2*a);
+    if (steps > 0) a = Math.round(a*steps)/steps;
+    cA[ci] = a; cU[ci] = u;
+    const cov = n[ci] ? sa[ci]/(255*n[ci]) : 0;
+    cTile[ci] = smooth(0.5, 0.8, cov);   // only mostly-covered tiles become solid squares
+    // randomizer: tiles in the fade area turn into complete squares; barely-covered ones vanish instead of leaving specks
+    if (fullAmt > 0 && cov > 0 && u > 0.02 && hash(cx+seed*41+101, cy+seed*19+53) < fullAmt*smooth(0.02 + onset*0.3, 0.5 + onset*0.3, u)) {
+      cFull[ci] = 1; cSolid[ci] = smooth(minCov*0.5, Math.max(minCov, 0.02), cov);
+    }
+  }
+
+  for (let y=0; y<H; y++) {
+    const cyi = yi[y], fy = y - (oy + cyi*ch);
+    for (let x=0; x<W; x++) {
+      const cxi = xi[x], fx = x - (ox + cxi*cw);
+      const ci = cyi*gc+cxi, i = (y*W+x)*4;
+      if (cFull[ci]) {
+        const uf = cU[ci], twf = tintAmt * smooth(onset*0.3, 0.9, uf);
+        let faf = cA[ci] * cSolid[ci];
+        if (feather > 0) faf *= 1 - feather + feather*(1 - smooth(s0 + dripD[vertical ? cxi : cyi], s1, vAt(x,y)));
+        if (gap > 0 && uf > 0.02 && (fx < gap/2 || fy < gap/2 || fx > cw-gap/2 || fy > ch-gap/2)) faf *= 1 - smooth(0, 0.15, uf);
+        d[i]   = cr[ci] + (tc[0]-cr[ci]) * twf;
+        d[i+1] = cg[ci] + (tc[1]-cg[ci]) * twf;
+        d[i+2] = cb[ci] + (tc[2]-cb[ci]) * twf;
+        d[i+3] = faf*255;
+        continue;
+      }
+      let a = d[i+3]/255;
+      if (a === 0) continue;
+      const u = cU[ci];
+      const p = smooth(onset*0.4, onset*0.4 + 0.45, u) * pixAmt;
+      if (p > 0 && sa[ci] > 0) {
+        d[i]   += (cr[ci] - d[i])   * p;
+        d[i+1] += (cg[ci] - d[i+1]) * p;
+        d[i+2] += (cb[ci] - d[i+2]) * p;
+      }
+      // deep inside the fade, edge tiles become full squares (only if mostly covered, so nothing sticks out)
+      const sq = smooth(0.3 + onset*0.25, 0.7 + onset*0.25, u) * pixAmt;
+      if (sq > 0) a += (cTile[ci] - a) * sq;
+      const tw = tintAmt * smooth(onset*0.3, 0.9, u);
+      if (tw > 0) {
+        d[i]   += (tc[0]-d[i])   * tw;
+        d[i+1] += (tc[1]-d[i+1]) * tw;
+        d[i+2] += (tc[2]-d[i+2]) * tw;
+      }
+      let fa = cA[ci];
+      if (feather > 0) {
+        const pa = 1 - smooth(s0 + dripD[vertical ? cxi : cyi], s1, vAt(x,y));
+        fa *= 1 - feather + feather*pa;
+      }
+      a *= fa;
+      if (gap > 0 && u > 0.02 && (fx < gap/2 || fy < gap/2 || fx > cw-gap/2 || fy > ch-gap/2)) a *= 1 - smooth(0, 0.15, u);
+      d[i+3] = a*255;
+    }
+  }
+  // ---- scattered leftovers: stray tiles that drift past the end of the fade ----
+  const scat = +$('scat').value/100;
+  if (scat > 0) {
+    const vertical = (dir === 'bottom' || dir === 'top');
+    const L = vertical ? ph : pw;
+    const tileLen = vertical ? g.bh : g.bw;
+    const reachV = (+$('reach').value * tileLen) / L;
+    const sop = +$('sop').value/100;
+    const nKeys = vertical ? gc : gr;
+    const kr = new Float64Array(nKeys), kg = new Float64Array(nKeys), kb = new Float64Array(nKeys), kn = new Float64Array(nKeys);
+    for (let cy=0; cy<gr; cy++) for (let cx=0; cx<gc; cx++) {
+      const ci = cy*gc+cx;
+      if (cTile[ci] > 0.5 && cU[ci] > 0.1 && cU[ci] < 0.97 && sa[ci] > 0) {
+        const k = vertical ? cx : cy;
+        kr[k] += sr[ci]/sa[ci]; kg[k] += sg[ci]/sa[ci]; kb[k] += sb[ci]/sa[ci]; kn[k]++;
+      }
+    }
+    const colorFor = k => {
+      for (const o of [0,1,-1,2,-2,3,-3]) { const j = k+o; if (j>=0 && j<nKeys && kn[j]) return [kr[j]/kn[j], kg[j]/kn[j], kb[j]/kn[j]]; }
+      return null;
+    };
+    for (let cy=0; cy<gr; cy++) for (let cx=0; cx<gc; cx++) {
+      const v = vAt(ox+(cx+0.5)*cw, oy+(cy+0.5)*ch);
+      const dv = v - s1;                                   // 0 = where the fade ends
+      if (dv < -0.14 || dv > reachV) continue;
+      const p = scat * smooth(-0.14, 0.02, dv) * Math.pow(1 - smooth(0, reachV, Math.max(0, dv)), 1.6);
+      if (hash(cx+seed*53+911, cy+seed*29+377) >= p) continue;
+      const col = colorFor(vertical ? cx : cy);
+      if (!col) continue;
+      const r = col[0] + (tc[0]-col[0])*tintAmt*0.8, gg = col[1] + (tc[1]-col[1])*tintAmt*0.8, b = col[2] + (tc[2]-col[2])*tintAmt*0.8;
+      const al = sop * (0.45 + 0.55*hash(cx*3+seed, cy*5+1)) * (1 - 0.6*smooth(0, reachV, Math.max(0, dv))) * 255;
+      const x0 = Math.max(0, Math.ceil(ox+cx*cw)), x1 = Math.min(W, Math.ceil(ox+(cx+1)*cw));
+      const y0 = Math.max(0, Math.ceil(oy+cy*ch)), y1 = Math.min(H, Math.ceil(oy+(cy+1)*ch));
+      for (let y=y0; y<y1; y++) for (let x=x0; x<x1; x++) {
+        const i = (y*W+x)*4;
+        if (d[i+3] < al) { d[i]=r; d[i+1]=gg; d[i+2]=b; d[i+3]=al; }
+      }
+    }
+  }
+
+  out.width = W; out.height = H;
+  out.getContext('2d').putImageData(id, 0, 0);
+  preview();
+}
+
+function preview() {
+  if (!photo || !out.width) return;
+  const {W,H} = dims, g = grid;
+  stage.width = W; stage.height = H;
+  const c = stage.getContext('2d');
+  c.drawImage(bg, 0, 0, W, H);
+  c.drawImage(out, 0, 0);
+  if ($('guide').checked) {
+    c.strokeStyle = 'rgba(255,40,120,.75)'; c.lineWidth = Math.max(1, W/700);
+    c.beginPath();
+    for (let k=0; k<=g.cols; k++) { const x = g.ox + k*g.bw; c.moveTo(x,0); c.lineTo(x,H); }
+    for (let k=0; k<=g.baseRows; k++) { const y = g.oy + k*g.bh; c.moveTo(0,y); c.lineTo(W,y); }
+    c.stroke();
+  }
+}
+
+function loadImg(file, cb) { const im = new Image(); im.onload = () => cb(im); im.src = URL.createObjectURL(file); }
+function setPhoto(im) {
+  const k = Math.min(1, 4000/Math.max(im.width, im.height));
+  const c = document.createElement('canvas'); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k);
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  photo = c; $('drop').style.display='none'; stage.style.display='block'; render();
+}
+
+$('file').onchange = e => { const f = e.target.files[0]; if (f) loadImg(f, setPhoto); };
+$('bgfile').onchange = e => { const f = e.target.files[0]; if (f) loadImg(f, im => {
+  bg = im; bgIsDefault = false;
+  $('offx').value = 0; $('offy').value = 0;
+  $('rows').value = Math.max(8, Math.min(90, Math.round(im.naturalHeight / (im.naturalWidth / +$('cols').value))));
+  render(); }); };
+$('dir').onchange = render;
+$('guide').onchange = preview;
+$('tintc').oninput = () => { clearTimeout(timer); timer = setTimeout(render, 30); };
+$('shuffle').onclick = () => { seed = (seed*7+13) % 997; render(); };
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => { $('tintc').value = b.dataset.c; render(); });
+let timer;
+ids.forEach(id => $(id).oninput = () => { labels(); clearTimeout(timer); timer = setTimeout(render, 30); });
+
+let drag = null;
+stage.onpointerdown = e => { stage.setPointerCapture(e.pointerId); stage.style.cursor='grabbing'; drag = {x:e.clientX, y:e.clientY, px:+$('px').value, py:+$('py').value}; };
+stage.onpointermove = e => {
+  if (!drag) return;
+  const r = stage.getBoundingClientRect();
+  $('px').value = drag.px + (e.clientX-drag.x)/r.width*100;
+  $('py').value = drag.py + (e.clientY-drag.y)/r.height*100;
+  labels(); clearTimeout(timer); timer = setTimeout(render, 30);
+};
+stage.onpointerup = () => { drag = null; stage.style.cursor='grab'; };
+
+function save(canvas, name) { canvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); }, 'image/png'); }
+$('dl').onclick = () => { if (photo) save(out, 'photo-pixel-fade-overlay.png'); };
+$('dl2').onclick = () => {
+  if (!photo) return;
+  const c = document.createElement('canvas'); c.width = dims.W; c.height = dims.H;
+  const x = c.getContext('2d'); x.drawImage(bg, 0, 0, dims.W, dims.H); x.drawImage(out, 0, 0);
+  save(c, 'photo-pixel-fade-composite.png');
+};
+
+labels();
+bg.onload = () => { if (photo) render(); };
+bg.src = BG_SRC;
+
+window.__loadForTest = (dataUrl) => new Promise(res => {
+  const im = new Image(); im.onload = () => { const go = () => { setPhoto(im); res(true); }; bg.complete && bg.naturalWidth ? go() : (bg.onload = go); }; im.src = dataUrl;
+});
+</script>
+</body>
+</html>

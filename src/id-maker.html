@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixel ID Maker</title>
+<style>
+__FONTCSS__
+:root { --bg:#14111c; --panel:#1b1626; --line:#352c4d; --txt:#ece8f7; --mut:#9a90b8; --acc:#a66bff; --acc2:#7c3aed; }
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body { margin:0; font:13px/1.4 "Space Grotesk", system-ui, sans-serif; background:var(--bg); color:var(--txt); display:flex; overflow:hidden; }
+aside { width:350px; flex:none; background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:14px 14px 40px; }
+aside h1 { font:700 15px "Silkscreen", monospace; letter-spacing:.04em; margin:2px 0 2px; color:#fff; }
+aside p.sub { margin:0 0 10px; color:var(--mut); font-size:12px; }
+details { border-top:1px solid var(--line); padding:2px 0; }
+summary { cursor:pointer; padding:9px 0; font-weight:700; font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:#cfc2f5; list-style:none; display:flex; justify-content:space-between; }
+summary::after { content:"+"; color:var(--mut); }
+details[open] > summary::after { content:"–"; }
+.f { margin:0 0 9px; }
+.f > label { display:flex; justify-content:space-between; color:var(--mut); font-size:12px; margin-bottom:3px; }
+.f > label b { color:var(--txt); font-weight:600; }
+input[type=text], textarea, select { width:100%; background:#120f1b; color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:inherit; }
+textarea { min-height:62px; resize:vertical; }
+input[type=range] { width:100%; accent-color:var(--acc); }
+input[type=color] { width:100%; height:30px; padding:2px; background:#120f1b; border:1px solid var(--line); border-radius:6px; }
+.chk { display:flex; align-items:center; gap:8px; color:var(--txt); font-size:12.5px; margin:6px 0 10px; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.three { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.btn { display:block; width:100%; margin:6px 0; padding:9px; text-align:center; background:var(--acc); color:#12091f; font:700 13px "Space Grotesk", sans-serif; border:0; border-radius:8px; cursor:pointer; }
+.btn.alt { background:transparent; color:var(--txt); border:1px solid var(--line); font-weight:500; }
+.btn:hover { filter:brightness(1.08); }
+small, .note { color:var(--mut); font-size:11.5px; display:block; margin:6px 0 10px; }
+main { flex:1; min-width:0; display:flex; flex-direction:column; }
+#bar { display:flex; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.seg button { background:transparent; color:var(--mut); border:0; padding:7px 12px; font:600 12px "Space Grotesk", sans-serif; cursor:pointer; }
+.seg button.on { background:var(--acc2); color:#fff; }
+#hint { color:var(--mut); font-size:12px; margin-left:auto; }
+#stage { flex:1; min-height:0; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:background .2s; }
+#stage.clear { background-image:linear-gradient(45deg,#2a2438 25%,transparent 25%),linear-gradient(-45deg,#2a2438 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2438 75%),linear-gradient(-45deg,transparent 75%,#2a2438 75%); background-size:20px 20px; background-position:0 0,0 10px,10px -10px,-10px 0; background-color:#1b1626; }
+.view { display:none; width:100%; height:100%; align-items:center; justify-content:center; }
+.view.on { display:flex; }
+#flat { max-height:calc(100vh - 80px); max-width:calc(100vw - 400px); box-shadow:0 10px 40px rgba(0,0,0,.45); cursor:grab; touch-action:none; background:#fff; }
+#scene { perspective:1300px; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+#card3d { --ar:.62; position:relative; height:min(calc(100vh - 100px), calc((100vw - 420px) / var(--ar))); aspect-ratio:var(--ar); transform-style:preserve-3d; will-change:transform; }
+#scene.grab { cursor:grab; } #scene.grab:active { cursor:grabbing; }
+.face { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.face.b { transform:rotateY(180deg); }
+.face canvas { width:100%; height:100%; display:block; }
+.spec { position:absolute; pointer-events:none; mix-blend-mode:soft-light; background:radial-gradient(circle at var(--mx,30%) var(--my,20%), rgba(255,255,255,.95), rgba(255,255,255,0) 52%); opacity:.6; }
+#v-both { gap:2.5%; padding:0 3%; }
+#v-both canvas { max-height:calc(100vh - 110px); max-width:46%; width:auto; height:auto; object-fit:contain; }
+</style>
+</head>
+<body>
+<aside id="side">
+  <h1>PIXEL ID MAKER</h1>
+  <p class="sub">CR80 card, 637 x 1012 at 300 DPI. Fill in the fields, then flip, tilt and export. <span id="savedNote" style="opacity:.45;transition:opacity .3s;color:#b98cff">Auto-saves</span></p>
+</aside>
+<main>
+  <div id="bar">
+    <div class="seg" id="segView"><button data-v="design">Design</button><button data-v="3d">3D mockup</button><button data-v="both">Both sides</button></div>
+    <div class="seg" id="segSide"><button data-s="front">Front</button><button data-s="back">Back</button></div>
+    <div class="seg" id="segMat"><button data-m="pvc">PVC card</button><button data-m="lam">Laminated</button></div>
+    <span id="hint"></span>
+  </div>
+  <div id="stage">
+    <div class="view" id="v-design"><canvas id="flat"></canvas></div>
+    <div class="view" id="v-3d"><div id="scene"><div id="card3d">
+      <div class="face f"><canvas id="mf"></canvas><div class="spec"></div></div>
+      <div class="face b"><canvas id="mb"></canvas><div class="spec"></div></div>
+    </div></div></div>
+    <div class="view" id="v-both"><canvas id="bf"></canvas><canvas id="bb"></canvas></div>
+  </div>
+</main>
+
+<script>__QR__</script>
+<script>
+const BG_SRC = "__BG__";
+const BGW = 637, BGH = 1012;
+const $ = id => document.getElementById(id);
+const smooth = (a,b,x) => { if (a===b) return x<a?0:1; const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
+const hash = (x,y) => { let h = (x*374761393 + y*668265263) | 0; h = (h ^ (h>>>13)) * 1274126177 | 0; return ((h ^ (h>>>16))>>>0) / 4294967295; };
+const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const mk = (w,h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+/* ---------------- pixel fade engine (same as the Pixel Fade Tool) ---------------- */
+__ENGINE__
+
+/* ---------------- state ---------------- */
+const DEF = {
+  fname:'Janvin D.', lname:'Salvador', nameMode:'bottom', role1:'Senior Associate', role2:'Creatives Director', team:'Executive', branch:'', logoSize:100, qrLogoSize:100, logoSlots:true, slotOutline:true, idno:'2026-02815-MN-0', valid:'VALID UNTIL 2027',
+  org:'AWS STUDENT BUILDER GROUP', org2:'POLYTECHNIC UNIVERSITY OF THE PHILIPPINES',
+  textColor:'#1a0f3a', accent:'#7c3aed', bandCol:'#0c0a14', band1Col:'#b98cff', band2Col:'#ffffff', nameFont:'IntraNet', hdrFont:'IntraNet', tagFont:'IntraNet', infoFont:'IntraNet', ghostFont:'IntraNet Outline', bandFont:'IntraNet Outline', frame:true, frameTop:7, frameBot:38, frameW:2.5, frameCol:'#0c0a14',
+  psize:88, px:42, py:17, dir:'bottom', start:42, end:86, drip:55, full:80, scat:25, reach:5, sop:75, detail:2, jit:45, feather:30, steps:0,
+  pix:85, tint:55, tintc:'#9a5be8', dom:100, mincov:15, onset:60, gap:0, offx:0.8, offy:0.8, cols:24, rows:38,
+  halo:true, haloCol:'#b79bf7', haloDx:-3, haloDy:-2.2, haloG:2.4, haloDots:true,
+  bgMode:'builtin', bgSolid:'#f4eefc',
+  ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
+  halftone:true, htSize:55, htAlpha:70, clusters:0, marks:false, readout:false, rail:true, sideLabel:'',
+  band:false, bandNoise:60,
+  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
+  linkedin:'linkedin.com/in/yourname', github:'github.com/yourname', facebook:'facebook.com/yourorg', instagram:'@yourorg', discord:'', website:'yourorg.dev', email:'yourname@email.com',
+  asset:true, assetOutline:true, assetX:11.5, assetY:21, assetScale:100, holder:false, connect:true, backInfo:'connect', job:true, jobFont:'Space Grotesk', jobX:11.6, jobY:21.6, jobW:11, jobSize:58, jobShadow:false, jobCol:'#14092e', jobBg:'blur', jobBlur:45, jobTint:'#ffffff', jobTintA:45, jobPad:55, jobBorder:false,
+  jobDesc:'Leader of the visual identity of the club. Oversees design, branding, and media production, and approves all materials before release.',
+  sh_linkedin:true, sh_github:true, sh_facebook:true, sh_instagram:true, sh_discord:false, sh_website:true, sh_email:true,
+  ret:'AWS Builder Group, PUP Sta. Mesa',
+  fine:'Non-transferable. Property of the organization. Valid only with the holder signature.',
+  sig:true, flip:'v', showGuides:true, showGrid:false,
+  mat:'pvc', finish:65, slot:true, backdrop:'lav', bdcol:'#d9d2ee', scale:3, seed:1, view:'design', side:'front', mode3d:'hover', rotX:0, rotY:0, tiltAmt:100, spin:40, zoom:100, persp:1300
+};
+const S = Object.assign({}, DEF);
+const STORE_KEY = 'pixel-id-maker.settings.v1';
+try { const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (saved) for (const k in saved) if (k in DEF && k !== 'view' && k !== 'side') S[k] = saved[k]; } catch (e) {}
+let saveT = null;
+function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { const o = {}; for (const k in DEF) o[k] = S[k]; localStorage.setItem(STORE_KEY, JSON.stringify(o)); flashSaved(); } catch (e) {} }, 400); }
+function flashSaved() { const el = document.getElementById('savedNote'); if (!el) return; el.textContent = 'Saved'; el.style.opacity = 1; clearTimeout(el._t); el._t = setTimeout(() => el.style.opacity = .45, 900); }
+/* uploaded images live in IndexedDB so they survive a reload */
+const IDB = { db: null };
+function idb() { if (IDB.db) return Promise.resolve(IDB.db); return new Promise((res, rej) => { try { const r = indexedDB.open('pixel-id-maker', 1); r.onupgradeneeded = () => r.result.createObjectStore('imgs'); r.onsuccess = () => res(IDB.db = r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
+function storeImg(name, im) {
+  idb().then(db => {
+    const tx = db.transaction('imgs', 'readwrite'), st = tx.objectStore('imgs');
+    if (!im) { st.delete(name); flashSaved(); return; }
+    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; c.getContext('2d').drawImage(im, 0, 0);
+    c.toBlob(b => { if (!b) return; db.transaction('imgs', 'readwrite').objectStore('imgs').put(b, name); flashSaved(); }, 'image/png');
+  }).catch(() => {});
+}
+function loadImgs() {
+  return idb().then(db => new Promise(res => {
+    const out = {}, st = db.transaction('imgs').objectStore('imgs'), rq = st.openCursor();
+    rq.onsuccess = () => { const cur = rq.result; if (!cur) { res(out); return; } out[cur.key] = cur.value; cur.continue(); };
+    rq.onerror = () => res(out);
+  })).then(m => Promise.all(Object.entries(m).map(([k, b]) => new Promise(r => { const im = new Image(); im.onload = () => r([k, im]); im.onerror = () => r([k, null]); im.src = URL.createObjectURL(b); })))).catch(() => []);
+}
+const FADE_KEYS = ['psize','px','py','dir','start','end','detail','jit','feather','steps','pix','tint','tintc','gap','cols','rows','offx','offy','drip','onset','full','dom','mincov','scat','reach','sop','seed','halo','haloDx','haloDy','haloG','haloCol','haloDots'];
+
+const bgImg = new Image();
+let photoCv = null, photoVer = 0, logoImg = null, logo2Img = null, logo3Img = null, logo4Img = null, assetImg = null, bgCustom = null, ownFront = null, ownBack = null;
+
+/* ---------------- sidebar spec ---------------- */
+const FONTS = ['IntraNet','IntraNet Outline','IntraNet Italic','Chakra Petch','Space Grotesk','Pixelify Sans','Silkscreen'];
+const SECTIONS = [
+ { title:'Card details', open:true, items:[
+   {k:'fname',t:'text',l:'First name(s)'}, {k:'lname',t:'text',l:'Last name'},
+   {k:'nameMode',t:'select',l:'Name position',o:[['bottom','Bottom left (classic)'],['right','Right of the head'],['left','Left of the head'],['above','Above the band']]},
+   {k:'role1',t:'text',l:'Role, line 1 (outline type)'}, {k:'role2',t:'text',l:'Role, line 2 (bold type)'},
+   {k:'team',t:'text',l:'Section (top right)'}, {k:'branch',t:'text',l:'Branch (right of the role bar, blank = off)'}, {k:'idno',t:'text',l:'ID number'}, {k:'valid',t:'text',l:'Valid until text'},
+   {k:'org',t:'text',l:'Header line 1'}, {k:'org2',t:'text',l:'Header line 2'},
+   {t:'file',id:'logoFile',l:'Header logo (replaces the chip icon)',h:'logo'}, {t:'btn',l:'Remove header logo',h:'noLogo',alt:true}, {k:'logoSize',t:'range',min:50,max:180,step:1,l:'Header logo size',u:'%'},
+   {t:'file',id:'logo2File',l:'Corner logo (other layouts only)',h:'logo2'}, {t:'btn',l:'Remove corner logo',h:'noLogo2',alt:true},
+   {k:'logoSlots',t:'check',l:'Two logo slots at the bottom middle'}, {k:'slotOutline',t:'check',l:'Show dashed outline on empty slots'},
+   {t:'file',id:'logo3File',l:'Logo slot 1',h:'logo3'}, {t:'file',id:'logo4File',l:'Logo slot 2',h:'logo4'}, {t:'btn',l:'Clear both slots',h:'noSlots',alt:true},
+   {t:'row3',items:[{k:'textColor',t:'color',l:'Text'},{k:'accent',t:'color',l:'Accent'},{k:'bandCol',t:'color',l:'Band'}]},
+   {t:'row3',items:[{k:'band1Col',t:'color',l:'Role 1'},{k:'band2Col',t:'color',l:'Role 2'}]} ]},
+ { title:'Photo and pixel fade', open:true, items:[
+   {t:'file',id:'photoFile',l:'Your photo (transparent PNG cutout works best)',h:'photo'}, {t:'btn',l:'Use placeholder',h:'noPhoto',alt:true},
+   {k:'psize',t:'range',min:30,max:140,step:1,l:'Photo size',u:'%'},
+   {k:'px',t:'range',min:-20,max:120,step:.1,l:'Horizontal position',u:'%'},
+   {k:'py',t:'range',min:-40,max:100,step:.1,l:'Vertical position',u:'%'},
+   {k:'start',t:'range',min:0,max:100,step:1,l:'Fade starts at',u:'%'},
+   {k:'end',t:'range',min:0,max:100,step:1,l:'Fully gone at',u:'%'},
+   {k:'drip',t:'range',min:0,max:100,step:1,l:'Drip (uneven streaks)',u:'%'},
+   {k:'full',t:'range',min:0,max:100,step:1,l:'Full-pixel randomizer',u:'%'},
+   {k:'scat',t:'range',min:0,max:100,step:1,l:'Scattered leftovers',u:'%'},
+   {t:'btn',l:'Shuffle randomness',h:'shuffle',alt:true},
+   {t:'sub',title:'Photo outline (halo)',items:[
+     {k:'halo',t:'check',l:'Offset outline behind the photo'}, {k:'haloCol',t:'color',l:'Outline color'},
+     {k:'haloDx',t:'range',min:-8,max:8,step:.1,l:'Offset left/right',u:'%'}, {k:'haloDy',t:'range',min:-8,max:8,step:.1,l:'Offset up/down',u:'%'},
+     {k:'haloG',t:'range',min:0.5,max:6,step:.1,l:'Thickness',u:'%'}, {k:'haloDots',t:'check',l:'Dotted halftone edge'} ]},
+   {t:'sub',title:'Advanced pixel fade',items:[
+     {k:'dir',t:'select',l:'Fades out toward',o:[['bottom','Bottom'],['top','Top'],['left','Left'],['right','Right']]},
+     {k:'onset',t:'range',min:0,max:100,step:1,l:'Pixelation starts later',u:'%'},
+     {k:'detail',t:'range',min:1,max:3,step:1,l:'Tile detail',u:'x'},
+     {k:'jit',t:'range',min:0,max:100,step:1,l:'Randomness',u:'%'},
+     {k:'feather',t:'range',min:0,max:100,step:1,l:'Feather',u:'%'},
+     {k:'steps',t:'range',min:0,max:12,step:1,l:'Opacity steps (0 = smooth)'},
+     {k:'pix',t:'range',min:0,max:100,step:1,l:'Pixelate color',u:'%'},
+     {k:'dom',t:'range',min:0,max:100,step:1,l:'Average to most visible color',u:'%'},
+     {k:'mincov',t:'range',min:0,max:60,step:1,l:'Min photo coverage per pixel',u:'%'},
+     {k:'tint',t:'range',min:0,max:100,step:1,l:'Tint toward color',u:'%'}, {k:'tintc',t:'color',l:'Tint color'},
+     {k:'reach',t:'range',min:1,max:40,step:1,l:'Leftover drift distance',u:' rows'},
+     {k:'sop',t:'range',min:10,max:100,step:1,l:'Leftover opacity',u:'%'},
+     {k:'gap',t:'range',min:0,max:10,step:1,l:'Grid lines through fading tiles',u:'px'},
+     {k:'offx',t:'range',min:-6,max:6,step:.1,l:'Grid fine-tune left/right',u:'px'},
+     {k:'offy',t:'range',min:-6,max:6,step:.1,l:'Grid fine-tune up/down',u:'px'} ]} ]},
+ { title:'Background and details', open:true, items:[
+   {k:'bgMode',t:'select',l:'Background',o:[['builtin','Pixel grid (built-in)'],['custom','My own image'],['solid','Solid color']]},
+   {t:'file',id:'bgFile',l:'Upload my background image',h:'bgImg'}, {k:'bgSolid',t:'color',l:'Solid color'},
+   {k:'frame',t:'check',l:'Line box on the white area (fades into purple)'}, {k:'frameTop',t:'range',min:4,max:12,step:0.5,l:'Box top row'}, {k:'frameBot',t:'range',min:18,max:38,step:0.5,l:'Box bottom row (38 = card bottom)'}, {k:'frameW',t:'range',min:1,max:6,step:0.5,l:'Box line weight'}, {k:'frameCol',t:'color',l:'Box line color'},
+   {k:'ghost',t:'check',l:'Giant outline word inside the box'}, {k:'ghostWord',t:'text',l:'Outline word'},
+   {k:'ghostRow',t:'range',min:4,max:30,step:.1,l:'Outline word position',u:' rows'},
+   {k:'ghostW',t:'range',min:0,max:5,step:.1,l:'Outline line weight'}, {k:'ghostAlpha',t:'range',min:5,max:100,step:1,l:'Outline strength',u:'%'},
+   {k:'halftone',t:'check',l:'Halftone dot burst behind the head'},
+   {k:'htSize',t:'range',min:15,max:120,step:1,l:'Burst size',u:'%'}, {k:'htAlpha',t:'range',min:5,max:100,step:1,l:'Burst strength',u:'%'},
+   {k:'clusters',t:'range',min:0,max:100,step:1,l:'Pixel block clusters',u:'%'},
+   {k:'marks',t:'check',l:'Ruler ticks and viewfinder corners'}, {k:'readout',t:'check',l:'System readout lines'},
+   {k:'rail',t:'check',l:'Top rail and ID number'}, {k:'sideLabel',t:'text',l:'Vertical side label (blank = off)'} ]},
+ { title:'Fonts', items:[
+   {k:'nameFont',t:'select',l:'Name (and back title)',o:FONTS}, {k:'hdrFont',t:'select',l:'Header (org lines)',o:FONTS},
+   {k:'tagFont',t:'select',l:'Role bar',o:FONTS}, {k:'infoFont',t:'select',l:'Team, ID and valid text',o:FONTS},
+   {k:'ghostFont',t:'select',l:'Big background word',o:FONTS}, {k:'bandFont',t:'select',l:'Bottom band role (outline line)',o:FONTS} ]},
+ { title:'Bottom band', items:[
+   {k:'band',t:'check',l:'Black pixel band with the role'}, {k:'bandNoise',t:'range',min:0,max:100,step:1,l:'Band pixel texture',u:'%'} ]},
+ { title:'Back side', items:[
+   {k:'backTitle',t:'text',l:'Title (first word solid, rest outline)'}, {k:'term',t:'text',l:'Top left text (term / year)'},
+   {k:'qrMode',t:'select',l:'QR content',o:[['link','A link (below)'],['vcard','Contact card (vCard from your details)'],['id','ID number only']]},
+   {k:'qr',t:'text',l:'QR link'}, {k:'qrLabel',t:'text',l:'Text under the QR'}, {k:'qrSub',t:'text',l:'Small line under that (blank = hide)'},
+   {k:'qrStyle',t:'select',l:'QR pixel style',o:[['bevel','Bevel pixels'],['pixel','Flat pixels'],['dots','Dots']]},
+   {k:'qrShade',t:'check',l:'Purple gradient shader on the QR'}, {k:'qrLogo',t:'check',l:'Logo in the QR center (uses header logo)'}, {k:'qrLogoSize',t:'range',min:60,max:120,step:1,l:'QR center logo size',u:'%'}, {k:'qrGlow',t:'check',l:'Pixel glow around the QR'},
+   {k:'holder',t:'check',l:'Holder details (name, position, ID, section)'},
+   {k:'job',t:'check',l:'Job description (top layer, drag it in Design view)'}, {k:'jobDesc',t:'area',l:'Job description'},
+   {k:'jobFont',t:'select',l:'Job description font',o:FONTS}, {k:'jobCol',t:'color',l:'Job description color'},
+   {k:'jobX',t:'range',min:0,max:22,step:0.1,l:'Job description left (tiles)'}, {k:'jobY',t:'range',min:4,max:36,step:0.1,l:'Job description top (tiles)'},
+   {k:'jobW',t:'range',min:5,max:22,step:0.5,l:'Job description width (tiles)'}, {k:'jobSize',t:'range',min:25,max:110,step:1,l:'Job description text size',u:'%'},
+   {k:'jobBg',t:'select',l:'Job description backdrop',o:[['blur','Frosted blur'],['pixel','Pixelated (mosaic)'],['solid','Solid tint only'],['none','None']]},
+   {k:'jobBlur',t:'range',min:5,max:150,step:1,l:'Blur / mosaic strength',u:'%'},
+   {k:'jobTint',t:'color',l:'Backdrop tint color'}, {k:'jobTintA',t:'range',min:0,max:100,step:1,l:'Backdrop tint amount',u:'%'},
+   {k:'jobPad',t:'range',min:10,max:150,step:1,l:'Backdrop padding',u:'%'}, {k:'jobBorder',t:'check',l:'Purple outline on the backdrop'},
+   {k:'jobShadow',t:'check',l:'Soft glow behind the letters'},
+   {k:'backInfo',t:'select',l:'Left column shows',o:[['connect','Connect list'],['none','Nothing']]},
+   {k:'sh_linkedin',t:'check',l:'Show LinkedIn'}, {k:'linkedin',t:'text',l:'LinkedIn'},
+   {k:'sh_github',t:'check',l:'Show GitHub'}, {k:'github',t:'text',l:'GitHub'},
+   {k:'sh_facebook',t:'check',l:'Show Facebook'}, {k:'facebook',t:'text',l:'Facebook'},
+   {k:'sh_instagram',t:'check',l:'Show Instagram'}, {k:'instagram',t:'text',l:'Instagram'},
+   {k:'sh_discord',t:'check',l:'Show Discord'}, {k:'discord',t:'text',l:'Discord'},
+   {k:'sh_website',t:'check',l:'Show website'}, {k:'website',t:'text',l:'Website'},
+   {k:'sh_email',t:'check',l:'Show email'}, {k:'email',t:'text',l:'Email'},
+   {k:'asset',t:'check',l:'Big asset area on the white canvas'}, {t:'file',id:'assetFile',l:'Upload asset (PNG with transparency)',h:'asset'}, {t:'btn',l:'Remove asset',h:'noAsset',alt:true},
+   {k:'assetOutline',t:'check',l:'Show placeholder outline when empty'},
+   {k:'assetX',t:'range',min:0,max:20,step:0.5,l:'Asset area left edge (tiles)'}, {k:'assetY',t:'range',min:8,max:34,step:0.5,l:'Asset area top edge (tiles)'},
+   {k:'assetScale',t:'range',min:30,max:160,step:1,l:'Asset size',u:'%'},
+   {k:'ret',t:'text',l:'If found, return to (blank = hide)'}, {k:'fine',t:'area',l:'Fine print'},
+   {k:'sig',t:'check',l:'Signature line'},
+   {k:'flip',t:'select',l:'Background orientation',o:[['none','Same as front'],['v','Flipped up/down'],['h','Mirrored left/right'],['both','Rotated 180']]} ]},
+ { title:'Material and mockup', open:true, items:[
+   {k:'mat',t:'select',l:'Card type',o:[['pvc','PVC card'],['lam','Laminated (pouch)']]},
+   {k:'finish',t:'range',min:0,max:100,step:1,l:'Finish: matte to glossy',u:'%'},
+   {k:'slot',t:'check',l:'Lanyard slot punch'},
+   {k:'showGuides',t:'check',l:'Show trim, safe zone and slot guides (design view)'},
+   {k:'showGrid',t:'check',l:'Show tile grid (design view)'},
+   {k:'backdrop',t:'select',l:'Mockup background',o:[['dark','Dark'],['lav','Lavender'],['desk','Warm desk'],['white','White'],['clear','Transparent'],['custom','Custom color']]},
+   {k:'bdcol',t:'color',l:'Custom background color'},
+   {k:'mode3d',t:'select',l:'3D control',o:[['hover','Tilt with the mouse'],['drag','Drag to rotate freely'],['spin','Auto spin'],['fixed','Fixed angle (sliders)']]},
+   {k:'rotX',t:'range',min:-40,max:40,step:1,l:'3D tilt up/down',u:'°'}, {k:'rotY',t:'range',min:-60,max:60,step:1,l:'3D turn left/right',u:'°'},
+   {k:'tiltAmt',t:'range',min:0,max:100,step:1,l:'Mouse tilt strength',u:'%'}, {k:'spin',t:'range',min:5,max:120,step:1,l:'Spin speed',u:'°/s'},
+   {k:'zoom',t:'range',min:40,max:140,step:1,l:'3D zoom',u:'%'}, {k:'persp',t:'range',min:500,max:4000,step:50,l:'Perspective depth',u:'px'},
+   {t:'btn',l:'Reset 3D view',h:'reset3d',alt:true} ]},
+ { title:'Use my own full design', items:[
+   {t:'note',l:'Export your finished front and back from Canva as 637 x 1012 PNGs and drop them here to mock them up as a real card.'},
+   {t:'file',id:'ownFrontFile',l:'My front design',h:'ownFront'}, {t:'file',id:'ownBackFile',l:'My back design',h:'ownBack'},
+   {t:'btn',l:'Go back to the built-in design',h:'noOwn',alt:true} ]},
+ { title:'Export', open:true, items:[
+   {k:'scale',t:'select',l:'Export size',o:[['1','1x  637 x 1012  (300 dpi)'],['2','2x  1274 x 2024  (600 dpi)'],['3','3x  1911 x 3036'],['4','4x  2548 x 4048']],num:true},
+   {t:'btn',l:'Front, print file (PNG)',h:'xFront'}, {t:'btn',l:'Back, print file (PNG)',h:'xBack',},
+   {t:'btn',l:'Front mockup (PNG)',h:'xMF',alt:true}, {t:'btn',l:'Back mockup (PNG)',h:'xMB',alt:true}, {t:'btn',l:'Both sides mockup (PNG)',h:'xMBoth',alt:true},
+   {t:'btn',l:'Save settings file (JSON)',h:'saveJson',alt:true}, {t:'btn',l:'Load settings file',h:'loadJson',alt:true},
+   {t:'btn',l:'Reset everything to defaults',h:'resetAll',alt:true},
+   {t:'note',l:'Your settings and uploaded images are saved in this browser automatically. Use the settings file to move them to another computer (images are not included in the file).'},
+   {t:'note',l:'Print files are flat, square-cornered and exactly trim size, so add your printer’s bleed if they ask for it. Mockups include the rounded corners, slot, shadow and finish.'} ]}
+];
+
+const ctl = {};
+const H = {};   // button / file handlers, filled below
+
+function fmtVal(it, v) { return (it.step && it.step < 1 ? (+v).toFixed(1) : Math.round(+v)) + (it.u || ''); }
+
+function buildItem(it, parent) {
+  if (it.t === 'row3') { const d = document.createElement('div'); d.className = 'three'; it.items.forEach(s => buildItem(s, d)); parent.appendChild(d); return; }
+  if (it.t === 'sub') {
+    const d = document.createElement('details'); d.innerHTML = '<summary>' + it.title + '</summary>'; const w = document.createElement('div'); d.appendChild(w);
+    it.items.forEach(s => buildItem(s, w)); parent.appendChild(d); return;
+  }
+  if (it.t === 'note') { const n = document.createElement('small'); n.textContent = it.l; parent.appendChild(n); return; }
+  if (it.t === 'btn') { const b = document.createElement('button'); b.className = 'btn' + (it.alt ? ' alt' : ''); b.textContent = it.l; b.onclick = () => H[it.h](); parent.appendChild(b); return; }
+  if (it.t === 'file') {
+    const l = document.createElement('label'); l.className = 'btn alt'; l.textContent = it.l;
+    const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.hidden = true; i.id = it.id;
+    i.onchange = e => { const f = e.target.files[0]; if (f) { const im = new Image(); im.onload = () => H[it.h](im); im.src = URL.createObjectURL(f); } e.target.value = ''; };
+    l.appendChild(i); parent.appendChild(l); return;
+  }
+  const wrap = document.createElement('div'); wrap.className = 'f';
+  const lab = document.createElement('label'); const sp = document.createElement('span'); sp.textContent = it.l; lab.appendChild(sp);
+  let inp;
+  if (it.t === 'check') {
+    wrap.className = 'chk'; inp = document.createElement('input'); inp.type = 'checkbox'; inp.checked = !!S[it.k];
+    wrap.appendChild(inp); wrap.appendChild(sp); parent.appendChild(wrap);
+    inp.oninput = () => { S[it.k] = inp.checked; schedule(); }; ctl[it.k] = {inp, set:v => inp.checked = !!v}; return;
+  }
+  if (it.t === 'select') {
+    inp = document.createElement('select');
+    it.o.forEach(o => { const op = document.createElement('option'); const [v, t] = Array.isArray(o) ? o : [o, o]; op.value = v; op.textContent = t; inp.appendChild(op); });
+    inp.value = S[it.k];
+  } else if (it.t === 'area') { inp = document.createElement('textarea'); inp.value = S[it.k]; }
+  else { inp = document.createElement('input'); inp.type = it.t; inp.value = S[it.k]; if (it.t === 'range') { inp.min = it.min; inp.max = it.max; inp.step = it.step; } }
+  let vb = null;
+  if (it.t === 'range') { vb = document.createElement('b'); vb.textContent = fmtVal(it, S[it.k]); lab.appendChild(vb); }
+  wrap.appendChild(lab); wrap.appendChild(inp); parent.appendChild(wrap);
+  inp.oninput = () => {
+    let v = inp.value;
+    if (it.t === 'range' || it.num) v = +v;
+    S[it.k] = v; if (vb) vb.textContent = fmtVal(it, v); if (V3KEYS.includes(it.k)) { persist(); if (it.k === 'mode3d') { hov.rx = hov.ry = 0; spinA = 0; update(PSC); } return; } schedule(FADE_KEYS.includes(it.k));
+  };
+  ctl[it.k] = { inp, set: v => { inp.value = v; if (vb) vb.textContent = fmtVal(it, v); } };
+}
+SECTIONS.forEach(sec => {
+  const d = document.createElement('details'); if (sec.open) d.open = true;
+  d.innerHTML = '<summary>' + sec.title + '</summary>';
+  const w = document.createElement('div'); d.appendChild(w); sec.items.forEach(it => buildItem(it, w)); $('side').appendChild(d);
+});
+function setS(k, v) { S[k] = v; if (ctl[k]) ctl[k].set(v); }
+
+/* ---------------- helpers ---------------- */
+function placeholderPhoto() {
+  const c = mk(900, 1100), x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 1100); g.addColorStop(0, '#5a43a0'); g.addColorStop(1, '#2a1a55'); x.fillStyle = g;
+  x.beginPath(); x.moveTo(40, 1100); x.bezierCurveTo(40, 760, 260, 640, 450, 640); x.bezierCurveTo(640, 640, 860, 760, 860, 1100); x.closePath(); x.fill();
+  x.fillRect(380, 520, 140, 150);
+  x.beginPath(); x.ellipse(450, 330, 170, 215, 0, 0, Math.PI*2); x.fill();
+  x.fillStyle = 'rgba(255,255,255,.9)'; x.textAlign = 'center'; x.font = '700 64px Silkscreen, monospace'; x.fillText('YOUR PHOTO', 450, 830);
+  return c;
+}
+const lay = (W, H, fx, fy) => {
+  const s = W / BGW, tw = W / 24, th = H / 38;
+  const ox = (fx ? -S.offx : S.offx) * s, oy = (fy ? -S.offy : S.offy) * s;
+  return { s, tw, th, ox, oy, tx: c => ox + c*tw, ty: r => oy + r*th };
+};
+const fadeCache = {}, haloCache = {};
+function dotPattern(cell) {
+  const c = mk(Math.round(cell), Math.round(cell)), x = c.getContext('2d');
+  x.fillStyle = '#000'; x.beginPath(); x.arc(c.width / 2, c.height / 2, c.width * 0.3, 0, 6.2832); x.fill(); return c;
+}
+function photoComposite() {
+  const base = photoCv || (photoCv = placeholderPhoto());
+  if (!S.halo) return { cv: base, pad: 0, base };
+  const key = [photoVer, S.haloDx, S.haloDy, S.haloG, S.haloCol, S.haloDots].join('|');
+  if (haloCache.key === key) return haloCache.val;
+  const w = base.width, h = base.height, g = S.haloG / 100 * w, dx = S.haloDx / 100 * w, dy = S.haloDy / 100 * w;
+  const pad = Math.ceil(g * 1.9 + Math.max(Math.abs(dx), Math.abs(dy))) + 6;
+  const cv = mk(w + 2 * pad, h + 2 * pad), x = cv.getContext('2d');
+  const dil = (rad, col) => {
+    const t = mk(cv.width, cv.height), q = t.getContext('2d'), n = 14;
+    for (let i = 0; i < n; i++) { const a = i / n * 6.2832; q.drawImage(base, pad + dx + Math.cos(a) * rad, pad + dy + Math.sin(a) * rad); }
+    q.drawImage(base, pad + dx, pad + dy);
+    q.globalCompositeOperation = 'source-in'; q.fillStyle = col; q.fillRect(0, 0, t.width, t.height); return t;
+  };
+  if (S.haloDots) {
+    const o = dil(g * 1.9, S.haloCol), q = o.getContext('2d');
+    q.globalCompositeOperation = 'destination-in'; q.fillStyle = q.createPattern(dotPattern(Math.max(5, w * 0.011)), 'repeat'); q.fillRect(0, 0, o.width, o.height);
+    x.globalAlpha = .8; x.drawImage(o, 0, 0);
+  }
+  x.globalAlpha = .72; x.drawImage(dil(g, S.haloCol), 0, 0); x.globalAlpha = 1;
+  x.drawImage(base, pad, pad);
+  haloCache.key = key; haloCache.val = { cv, pad, base };
+  return haloCache.val;
+}
+function getFade(W, H) {
+  const pc = photoComposite();
+  const P = {}; FADE_KEYS.forEach(k => P[k] = S[k]);
+  const key = JSON.stringify(P) + '|' + photoVer;
+  const hit = fadeCache[W]; if (hit && hit.key === key) return hit.cv;
+  if (pc.pad) {
+    const orig = pc.base, k = (BGW * S.psize / 100) / orig.width, fp = pc.pad / pc.cv.height;
+    P.psize = S.psize * pc.cv.width / orig.width;
+    P.py = S.py - pc.pad * k / BGH * 100;
+    P.start = (fp + S.start / 100 * (1 - 2 * fp)) * 100; P.end = (fp + S.end / 100 * (1 - 2 * fp)) * 100;
+  }
+  const cv = fadeEngine(pc.cv, bgImg, P, W, H, S.seed);
+  fadeCache[W] = { key, cv };
+  const ks = Object.keys(fadeCache); if (ks.length > 3) delete fadeCache[ks[0]];
+  return cv;
+}
+function wrapText(x, text, maxW) {
+  const out = [];
+  String(text).split('\n').forEach(par => {
+    const words = par.split(/\s+/).filter(Boolean); let line = '';
+    if (!words.length) { out.push(''); return; }
+    words.forEach(w => { const t = line ? line + ' ' + w : w; if (line && x.measureText(t).width > maxW) { out.push(line); line = w; } else line = t; });
+    out.push(line);
+  });
+  return out;
+}
+function fit(x, text, family, weight, maxW, maxPx, minPx) {
+  let px = maxPx; x.font = `${weight} ${px}px "${family}"`;
+  const w = x.measureText(text).width;
+  if (w > maxW) { px = Math.max(minPx, px * maxW / w); x.font = `${weight} ${px}px "${family}"`; }
+  return { px, w: x.measureText(text).width };
+}
+function coverDraw(x, im, W, H) { x.drawImage(im, 0, 0, W, H); }
+
+/* ---------------- front ---------------- */
+const nm = () => ({ a: (S.fname || '').trim().toUpperCase(), b: (S.lname || '').trim().toUpperCase() });
+const nmFull = () => (S.fname + ' ' + S.lname).trim();
+const rlFull = () => (S.role1 + ' ' + S.role2).trim();
+const rgba = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+function rng(seed) { let s = (seed * 2654435761 + 12345) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function chipIcon(x, px, py, size, col) {
+  const m = ['001111100','011111110','110111011','111111111','110111011','111111111','110111011','011111110','001111100'];
+  const c = size / 9; x.fillStyle = col;
+  m.forEach((row, r) => [...row].forEach((v, i) => { if (v === '1' && !(r > 0 && r < 8 && i > 1 && i < 7 && (r + i) % 2 === 0 && r > 2 && r < 6 && i > 2 && i < 6)) x.fillRect(Math.round(px + i * c), Math.round(py + r * c), Math.ceil(c), Math.ceil(c)); }));
+}
+function drawBG(x, W, H) {
+  if (S.bgMode === 'custom' && bgCustom) {
+    const k = Math.max(W / bgCustom.width, H / bgCustom.height), w = bgCustom.width * k, h = bgCustom.height * k;
+    x.drawImage(bgCustom, (W - w) / 2, (H - h) / 2, w, h);
+  } else if (S.bgMode === 'solid') { x.fillStyle = S.bgSolid; x.fillRect(0, 0, W, H); }
+  else x.drawImage(bgImg, 0, 0, W, H);
+}
+function drawFront(W, H) {
+  const c = mk(W, H), x = c.getContext('2d');
+  if (ownFront) { coverDraw(x, ownFront, W, H); return c; }
+  const L = lay(W, H, false, false), { tw, th, tx, ty } = L;
+  const ink = S.textColor, acc = S.accent;
+  drawBG(x, W, H);
+  x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+  const R = rng(S.seed + 7);
+  const ph = H * S.psize / 100 * 1.1;
+  const cx = W * S.px / 100, cy = H * S.py / 100 + ph * 0.2;
+
+  // halftone burst behind the head
+  if (S.halftone) {
+    const Rr = W * 0.62 * S.htSize / 100, pitch = th * 0.2, A = S.htAlpha / 100;
+    x.save(); x.fillStyle = acc;
+    for (let j = -Math.ceil(Rr / pitch); j <= Math.ceil(Rr / pitch); j++) for (let i = -Math.ceil(Rr / pitch); i <= Math.ceil(Rr / pitch); i++) {
+      const px = cx + (i + (j & 1) * 0.5) * pitch, py = cy + j * pitch * 0.866, d = Math.hypot(px - cx, py - cy) / Rr;
+      if (d >= 1 || px < 0 || px > W || py < 0 || py > H) continue;
+      const r = pitch * 0.48 * Math.pow(1 - d, 1.1); if (r < 0.5) continue;
+      x.globalAlpha = A * 0.55; x.beginPath(); x.arc(px, py, r, 0, 6.2832); x.fill();
+    }
+    x.restore();
+  }
+  // tile-aligned pixel clusters
+  if (S.clusters > 0) {
+    const dens = S.clusters / 100;
+    [[24, 0, 8.5, 6.5, -1, 1], [0, 21, 5.5, 8.5, 1, 1], [24, 25.5, 4.2, 5.5, -1, -1]].forEach(([ox, oy, w, h, sx, sy]) => {
+      for (let j = 0; j < Math.ceil(h); j++) for (let i = 0; i < Math.ceil(w); i++) {
+        const d = Math.hypot(i / w, j / h), p = (1 - d) * dens * 1.4;
+        if (p <= 0 || R() > p) continue;
+        const lvl = Math.min(3, Math.floor((1 - d) * 4 * R() + 0.4)), a = [0.1, 0.2, 0.34, 0.5][lvl];
+        const col = ox === 0 && R() > 0.8 ? S.band1Col : acc;
+        const tx0 = ox + sx * (i + (sx < 0 ? 1 : 0)), ty0 = oy + (sy > 0 ? j : -j - 1 + 0);
+        x.globalAlpha = a; x.fillStyle = col; x.fillRect(Math.round(tx(tx0)), Math.round(ty(ty0)), Math.ceil(tw), Math.ceil(th));
+      }
+    });
+    x.globalAlpha = 1;
+  }
+  // giant outline word
+  if (S.ghost && S.ghostWord) {
+    const word = S.ghostWord.toUpperCase(); x.font = `400 100px "${S.ghostFont}"`;
+    const k = (tw * 21.0) / x.measureText(word).width, pxs = Math.min(100 * k, th * 5.5);
+    x.font = `400 ${pxs}px "${S.ghostFont}"`; const wv = x.measureText(word).width;
+    x.textAlign = 'center'; x.fillStyle = rgba(acc, S.ghostAlpha / 100 * 0.35); x.fillText(word, W / 2, ty(S.ghostRow));
+    x.strokeStyle = rgba(acc, S.ghostAlpha / 100 * 1.2); x.lineWidth = Math.max(1, W / 450 * S.ghostW); x.lineJoin = 'round';
+    x.strokeText(word, W / 2, ty(S.ghostRow)); x.textAlign = 'left';
+  }
+  // ruler ticks
+  if (S.marks) {
+    x.fillStyle = rgba(ink, 0.45);
+    for (let r = 7; r <= 29; r += 1) { const long = (r - 7) % 4 === 0; x.fillRect(Math.round(tx(0.5)), Math.round(ty(r)), Math.round(tw * (long ? 0.6 : 0.3)), Math.max(1, Math.round(W / 320))); }
+  }
+
+  // line box on the white area, fading out where it meets the purple
+  if (S.frame) {
+    const fc = mk(W, H), fx = fc.getContext('2d'), X0 = Math.round(tx(1)), X1 = Math.round(tx(23)), Y0 = Math.round(ty(S.frameTop)), Y1 = S.frameBot >= 38 ? H : Math.round(ty(S.frameBot)), lw = Math.max(1, Math.round(W / 637 * S.frameW));
+    fx.fillStyle = S.frameCol; fx.fillRect(X0, Y0, X1 - X0, lw); fx.fillRect(X0, Y0, lw, Y1 - Y0); fx.fillRect(X1 - lw, Y0, lw, Y1 - Y0); if (S.frameBot < 38) fx.fillRect(X0, Y1 - lw, X1 - X0, lw);
+    fx.fillRect(X0 - lw * 2, Y0 - lw * 2, lw * 4 + lw, lw * 4 + lw);
+    const bc = mk(W, H); drawBG(bc.getContext('2d'), W, H);
+    const bd = bc.getContext('2d').getImageData(0, 0, W, H), d = bd.data;
+    for (let i = 0; i < d.length; i += 4) { const t = Math.min(1, Math.max(0, (d[i + 1] - 150) / 95)); d[i + 3] = Math.round(255 * t * t * (3 - 2 * t)); d[i] = d[i + 1] = d[i + 2] = 0; }
+    bc.getContext('2d').putImageData(bd, 0, 0);
+    const bl = mk(W, H), bx = bl.getContext('2d'); bx.filter = `blur(${th * 1.6}px)`; bx.drawImage(bc, 0, 0); bx.filter = 'none';
+    fx.globalCompositeOperation = 'destination-in'; fx.drawImage(bl, 0, 0);
+    const gr = fx.createLinearGradient(0, ty(16), 0, ty(37)); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    fx.fillStyle = gr; fx.fillRect(0, 0, W, H);
+    x.drawImage(fc, 0, 0);
+  }
+  // photo
+  x.drawImage(getFade(W, H), 0, 0);
+
+  // top rail + slashes
+  if (S.rail) {
+    x.fillStyle = ink; x.fillRect(0, Math.round(ty(0.55)), Math.round(tx(7)), Math.round(th * 0.65));
+    x.fillStyle = acc; for (let i = 0; i < 3; i++) { x.beginPath(); const sx = tx(7.4 + i * 0.6), y0 = ty(0.55), y1 = ty(1.2); x.moveTo(sx + tw * 0.25, y0); x.lineTo(sx + tw * 0.5, y0); x.lineTo(sx + tw * 0.25, y1); x.lineTo(sx, y1); x.fill(); }
+  }
+  
+
+  // header
+  let hx = tx(1); const isz = tw * 2.2;
+  if (logoImg) { let bh = th * 2.2 * S.logoSize / 100, bw = bh * logoImg.width / logoImg.height; if (bw > tw * 6) { bw = tw * 6; bh = bw * logoImg.height / logoImg.width; } x.drawImage(logoImg, hx, ty(4.85) - bh / 2, bw, bh); hx += bw + tw * 0.5; }
+  else { chipIcon(x, hx, ty(3.7), isz, ink); hx += isz + tw * 0.5; }
+  const hmax = tx(23) - hx;
+  x.fillStyle = ink; let f = fit(x, (S.org || '').toUpperCase(), S.hdrFont, 700, hmax, th * 0.78, th * 0.3);
+  x.fillText((S.org || '').toUpperCase(), hx, ty(4.7));
+  x.globalAlpha = .8; fit(x, (S.org2 || '').toUpperCase(), S.hdrFont, 400, hmax, th * 0.5, th * 0.24);
+  x.fillText((S.org2 || '').toUpperCase(), hx, ty(5.55)); x.globalAlpha = 1;
+
+  // viewfinder brackets
+  if (S.marks) {
+    x.strokeStyle = ink; x.lineWidth = Math.max(1.5, W / 320); x.lineCap = 'butt';
+    [[0.9, 6.4, 1, 1], [23.1, 6.4, -1, 1], [0.9, 29.8, 1, -1], [23.1, 29.8, -1, -1]].forEach(([a, b, sx, sy]) => {
+      const X = tx(a), Y = ty(b), l = tw * 0.9; x.beginPath(); x.moveTo(X + sx * l, Y); x.lineTo(X, Y); x.lineTo(X, Y + sy * l); x.stroke();
+    });
+  }
+
+  // name block
+  if (S.nameMode === 'bottom') {
+    const full = nmFull(), maxWn = tw * 22, maxPx = th * 1.1; let lines = [full], px;
+    const f0 = fit(x, full, S.nameFont, 700, maxWn, maxPx, maxPx * 0.4);
+    if (f0.px < maxPx * 0.62 && S.fname && S.lname) {
+      const fa = fit(x, S.fname, S.nameFont, 700, maxWn, maxPx * 0.85, maxPx * 0.4), fb2 = fit(x, S.lname, S.nameFont, 700, maxWn, maxPx * 0.85, maxPx * 0.4);
+      px = Math.min(fa.px, fb2.px); lines = [S.fname, S.lname];
+    } else px = f0.px;
+    x.font = `700 ${px}px "${S.nameFont}"`; x.fillStyle = ink;
+    lines.forEach((ln, i) => x.fillText(ln, tx(1), ty(33.15) - (lines.length - 1 - i) * px * 1.12));
+    const by = ty(34), bh = ty(35) - ty(34), role = rlFull().toUpperCase(); let bw = 0;
+    if (role) {
+      const fr = fit(x, role, S.tagFont, 700, tw * 17, th * 0.52, th * 0.3), tW = fr.w; bw = Math.ceil((tW + th * 1.0) / tw) * tw;
+      x.fillStyle = S.bandCol; x.fillRect(Math.round(tx(1)), Math.round(by), Math.round(bw), Math.round(bh));
+      x.fillStyle = S.band2Col; x.textBaseline = 'middle'; x.fillText(role, tx(1) + (bw - tW) / 2, by + bh * 0.54); x.textBaseline = 'alphabetic';
+      [.55, .32, .16].forEach((a, i) => { x.globalAlpha = a; x.fillStyle = S.bandCol; x.fillRect(Math.round(tx(1) + bw + i * tw), Math.round(by), Math.round(tx(2) - tx(1)), Math.round(bh)); }); x.globalAlpha = 1;
+    }
+    x.fillStyle = ink;
+    if (S.branch) { x.textAlign = 'right'; x.font = `700 ${th * 0.5}px "${S.infoFont}"`; x.textBaseline = 'middle'; x.fillText(S.branch.toUpperCase(), tx(23), by + bh * 0.54); x.textBaseline = 'alphabetic'; x.textAlign = 'left'; }
+    // section, top right
+    if (S.team) { x.textAlign = 'right'; x.font = `700 ${th * 0.62}px "${S.infoFont}"`; x.fillText(S.team.toUpperCase(), tx(23), ty(1.3)); x.textAlign = 'left'; }
+    // two logo slots, centred
+    if (S.logoSlots) {
+      const sz = Math.round(tx(2) - tx(1)) * 1.5, gap = tw * 0.4, sy = ty(35.45), sx0 = W / 2 - sz - gap / 2;
+      [logo3Img, logo4Img].forEach((im, i) => {
+        const sx = sx0 + i * (sz + gap);
+        if (im) { const k = Math.min(sz / im.width, sz / im.height), w = im.width * k, h = im.height * k; x.drawImage(im, sx + (sz - w) / 2, sy + (sz - h) / 2, w, h); }
+        else if (S.slotOutline) { x.save(); x.strokeStyle = rgba(ink, 0.6); x.lineWidth = Math.max(1, W / 450); x.setLineDash([th * 0.16, th * 0.12]); x.strokeRect(sx, sy, sz, sz); x.restore(); }
+      });
+    }
+    x.font = `400 ${th * 0.42}px "${S.infoFont}"`; x.globalAlpha = .85;
+    if (S.idno) x.fillText('ID ' + S.idno, tx(1), ty(36.4));
+    if (S.valid) { x.textAlign = 'right'; x.fillText(S.valid.toUpperCase(), tx(23), ty(36.4)); }
+    x.globalAlpha = 1; x.textAlign = 'left';
+    return c;
+  }
+  const n = nm(), mode = S.nameMode;
+  const right = mode === 'right', above = mode === 'above';
+  const nx = above ? tx(1) : right ? tx(23) : tx(1), maxW = above ? tw * 14 : tw * 8.2;
+  const r1 = above ? 28.2 : 9.0, r2 = above ? 29.9 : 10.6;
+  x.textAlign = right ? 'right' : 'left'; x.fillStyle = S.textColor;
+  fit(x, n.a, S.nameFont, 400, maxW, th * 1.25, th * 0.5); x.fillText(n.a, nx, ty(r1));
+  const fb = fit(x, n.b, S.nameFont, 700, maxW, th * 1.7, th * 0.55); x.fillText(n.b, nx, ty(r2));
+  if (S.team) {
+    x.font = `700 ${th * 0.46}px "${S.tagFont}"`; const tW = x.measureText(S.team.toUpperCase()).width, bw = Math.ceil((tW + th * 0.7) / tw) * tw;
+    const bx = right ? nx - bw : nx, by = Math.round(ty(r2 + 0.7)); x.fillStyle = acc; x.fillRect(Math.round(bx), by, Math.round(bw), Math.round(th));
+    x.fillStyle = '#fff'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(S.team.toUpperCase(), bx + (bw - tW) / 2, by + th * 0.54); x.textBaseline = 'alphabetic';
+  }
+  x.textAlign = 'left';
+
+  // system readout on the opposite side
+  if (S.readout && !above) {
+    const rx0 = right ? tx(1) : tx(23), al = right ? 'left' : 'right', rw = tw * 4.8;
+    x.font = `400 ${th * 0.36}px "${S.infoFont}"`; x.fillStyle = rgba(ink, 0.8); x.textAlign = al;
+    [['ID', S.idno], ['UNIT', S.team], ['STATUS', 'ACTIVE']].forEach(([k, v], i) => {
+      const y = ty(7.35 + i * 0.65), vt = String(v || '').toUpperCase();
+      x.textAlign = 'left'; x.fillText(k, right ? rx0 : rx0 - rw, y);
+      const kw = x.measureText(k).width, vw = x.measureText(vt).width, xs = right ? rx0 : rx0 - rw;
+      x.fillStyle = rgba(ink, 0.35); for (let d = xs + kw + tw * 0.3; d < xs + rw - vw - tw * 0.3; d += th * 0.22) x.fillRect(Math.round(d), Math.round(y - th * 0.08), Math.max(1, Math.round(W / 400)), Math.max(1, Math.round(W / 400)));
+      x.fillStyle = rgba(ink, 0.8); x.fillText(vt, xs + rw - vw, y);
+    });
+    x.textAlign = 'left';
+  }
+  // vertical label
+  if (S.sideLabel) {
+    x.save(); x.translate(tx(23.35), ty(28.3)); x.rotate(-Math.PI / 2); x.font = `400 ${th * 0.4}px "${S.infoFont}"`; x.fillStyle = rgba(ink, 0.65);
+    x.fillText(S.sideLabel.toUpperCase(), 0, 0); x.restore();
+  }
+  // corner logo
+  if (logo2Img) { const bh = th * 2.2, bw = Math.min(tw * 5, bh * logo2Img.width / logo2Img.height); x.drawImage(logo2Img, tx(23) - bw, ty(31.4) - bh, bw, bh); }
+
+  // bottom band
+  if (S.band) {
+    const bR = rng(S.seed + 99), bc = S.bandCol, nz = S.bandNoise / 100;
+    [].forEach(([r, p]) => { for (let i = 0; i < 24; i++) if (bR() < p) { x.globalAlpha = 1; x.fillStyle = bc; x.fillRect(Math.round(tx(i)), Math.round(ty(r)), Math.ceil(tw), Math.ceil(th)); } });
+    x.fillStyle = bc; x.fillRect(0, Math.round(ty(32)), W, H - Math.round(ty(32)));
+    for (let r = 32; r < 38; r++) for (let i = 0; i < 24; i++) if (bR() < nz * 0.28) { x.fillStyle = rgba(S.band1Col, 0.05 + bR() * 0.16); x.fillRect(Math.round(tx(i)), Math.round(ty(r)), Math.ceil(tw), Math.ceil(th)); }
+    x.fillStyle = S.band1Col; x.globalAlpha = .7; x.fillRect(0, Math.round(ty(32)), W, Math.max(1, Math.round(W / 500))); x.globalAlpha = 1;
+    x.textAlign = 'center';
+    const maxWb = tw * 22, a = (S.role1 || '').toUpperCase(), b = (S.role2 || '').toUpperCase();
+    const f1 = fit(x, a, S.bandFont, 400, maxWb, th * 2.0, th * 0.6);
+    x.fillStyle = S.band1Col; x.strokeStyle = S.band1Col; x.lineWidth = Math.max(1, W / 500); x.fillText(a, W / 2, ty(35.15)); x.strokeText(a, W / 2, ty(35.15));
+    fit(x, b, S.tagFont, 700, maxWb, th * 1.45, th * 0.5); x.fillStyle = S.band2Col; x.fillText(b, W / 2, ty(36.85));
+    // micro row
+    x.textAlign = 'left'; x.font = `400 ${th * 0.36}px "${S.infoFont}"`; x.fillStyle = rgba(S.band2Col, 0.7); x.fillText((S.valid || '').toUpperCase(), tx(1), ty(33.25));
+    let h = 7; for (const ch of String(S.idno)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const bx0 = tx(17), bR2 = rng(h); x.fillStyle = rgba(S.band2Col, 0.75);
+    for (let X = 0; X < tw * 6;) { const w = (1 + Math.floor(bR2() * 3)) * (W / 637) * 1.4; if (bR2() > 0.35) x.fillRect(Math.round(bx0 + X), Math.round(ty(32.55)), Math.max(1, Math.round(w)), Math.round(th * 0.75)); X += w + (W / 637) * 1.4; }
+  }
+  x.textAlign = 'left';
+  return c;
+}
+
+/* ---------------- back ---------------- */
+function drawQR(x, text, bx, by, size, dark) {
+  const q = qrcode(0, 'M'); q.addData(text || ' '); q.make();
+  const n = q.getModuleCount(), qz = 2, cell = size / (n + qz * 2);
+  x.fillStyle = '#fff'; x.fillRect(bx, by, size, size); x.fillStyle = dark;
+  for (let r = 0; r < n; r++) for (let cc = 0; cc < n; cc++) if (q.isDark(r, cc)) {
+    const x0 = Math.round(bx + (cc + qz) * cell), x1 = Math.round(bx + (cc + qz + 1) * cell);
+    const y0 = Math.round(by + (r + qz) * cell), y1 = Math.round(by + (r + qz + 1) * cell);
+    x.fillRect(x0, y0, x1 - x0, y1 - y0);
+  }
+}
+function qrText() {
+  if (S.qrMode === 'id') return S.idno || ' ';
+  if (S.qrMode === 'vcard') return ['BEGIN:VCARD', 'VERSION:3.0', `N:${S.lname};${S.fname}`, `FN:${nmFull()}`, `ORG:${S.org}`, `TITLE:${rlFull()}`,
+    S.email ? `EMAIL:${S.email}` : '', S.website ? `URL:${/^https?:/.test(S.website) ? S.website : 'https://' + S.website}` : '', 'END:VCARD'].filter(Boolean).join('\n');
+  return S.qr || S.website || S.idno || ' ';
+}
+// pixel-art QR: gradient shader, bevelled modules, custom finder eyes, optional centre mark
+function drawQRArt(x, text, X, Y, size, W) {
+  const logo = S.qrLogo, q = qrcode(0, logo ? 'H' : 'M'); q.addData(text); q.make();
+  const n = q.getModuleCount(), qz = 2, cell = size / (n + qz * 2), ox = X + qz * cell, oy = Y + qz * cell;
+  const ink = S.textColor, acc = S.accent;
+  // card with notched pixel corners
+  const nc = cell * 1.2; x.fillStyle = '#fff'; x.beginPath();
+  x.moveTo(X + nc, Y); x.lineTo(X + size - nc, Y); x.lineTo(X + size - nc, Y + nc); x.lineTo(X + size, Y + nc); x.lineTo(X + size, Y + size - nc); x.lineTo(X + size - nc, Y + size - nc);
+  x.lineTo(X + size - nc, Y + size); x.lineTo(X + nc, Y + size); x.lineTo(X + nc, Y + size - nc); x.lineTo(X, Y + size - nc); x.lineTo(X, Y + nc); x.lineTo(X + nc, Y + nc); x.closePath(); x.fill();
+  const g = x.createLinearGradient(ox, oy, ox + n * cell, oy + n * cell); g.addColorStop(0, ink); g.addColorStop(1, S.qrShade ? acc : ink);
+  const isEye = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+  const k = logo ? (Math.round(n * 0.22 * Math.min(1.2, S.qrLogoSize / 100)) | 1) : 0, c0 = (n - k) / 2;
+  const inLogo = (r, c) => logo && r >= c0 - 0.5 && r < c0 + k - 0.5 && c >= c0 - 0.5 && c < c0 + k - 0.5;
+  const R = v => Math.round(v);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!q.isDark(r, c) || isEye(r, c) || inLogo(r, c)) continue;
+    const x0 = R(ox + c * cell), y0 = R(oy + r * cell), w = R(ox + (c + 1) * cell) - x0, h = R(oy + (r + 1) * cell) - y0;
+    if (S.qrStyle === 'dots') { x.fillStyle = g; x.beginPath(); x.arc(x0 + w / 2, y0 + h / 2, w * 0.46, 0, 6.2832); x.fill(); continue; }
+    x.fillStyle = g; x.fillRect(x0, y0, w, h);
+    if (S.qrStyle === 'bevel') {
+      const e = Math.max(1, R(cell * 0.16));
+      const up = r > 0 && q.isDark(r - 1, c) && !isEye(r - 1, c), lf = c > 0 && q.isDark(r, c - 1) && !isEye(r, c - 1);
+      const dn = r < n - 1 && q.isDark(r + 1, c) && !isEye(r + 1, c), rt = c < n - 1 && q.isDark(r, c + 1) && !isEye(r, c + 1);
+      x.fillStyle = 'rgba(255,255,255,.28)'; if (!up) x.fillRect(x0, y0, w, e); if (!lf) x.fillRect(x0, y0, e, h);
+      x.fillStyle = 'rgba(0,0,0,.28)'; if (!dn) x.fillRect(x0, y0 + h - e, w, e); if (!rt) x.fillRect(x0 + w - e, y0, e, h);
+    }
+  }
+  // finder eyes: notched ring + accent core
+  const notch = (px, py, s, col, hole) => {
+    const u = s / 7; x.fillStyle = col; x.beginPath();
+    x.moveTo(px + u, py); x.lineTo(px + s - u, py); x.lineTo(px + s - u, py + u); x.lineTo(px + s, py + u); x.lineTo(px + s, py + s - u); x.lineTo(px + s - u, py + s - u);
+    x.lineTo(px + s - u, py + s); x.lineTo(px + u, py + s); x.lineTo(px + u, py + s - u); x.lineTo(px, py + s - u); x.lineTo(px, py + u); x.lineTo(px + u, py + u); x.closePath();
+    if (hole) x.rect(px + s - u, py + u, -(s - 2 * u), s - 2 * u);
+    x.fill('evenodd');
+  };
+  [[0, 0], [0, n - 7], [n - 7, 0]].forEach(([r, c]) => {
+    const px = R(ox + c * cell), py = R(oy + r * cell), s = R(cell * 7);
+    x.fillStyle = ink; x.beginPath(); x.rect(px, py, s, s); x.rect(px + s - R(cell), py + R(cell), -(s - 2 * R(cell)), s - 2 * R(cell)); x.fill('evenodd');
+    x.fillStyle = S.qrShade ? acc : ink; x.fillRect(R(px + cell * 2), R(py + cell * 2), R(cell * 3), R(cell * 3));
+  });
+  if (logo) {
+    const s = k * cell, px = ox + c0 * cell, py = oy + c0 * cell, pad = cell * 0.35;
+    if (logoImg) { const kk = Math.min((s - pad * 2) / logoImg.width, (s - pad * 2) / logoImg.height); x.drawImage(logoImg, px + (s - logoImg.width * kk) / 2, py + (s - logoImg.height * kk) / 2, logoImg.width * kk, logoImg.height * kk); }
+    else chipIcon(x, px + pad, py + pad, s - pad * 2, ink);
+  }
+  return n;
+}
+const MONO = [['linkedin', 'IN'], ['github', 'GH'], ['facebook', 'FB'], ['instagram', 'IG'], ['discord', 'DC'], ['website', 'WW'], ['email', 'EM']];
+function drawBack(W, H) {
+  const c = mk(W, H), x = c.getContext('2d');
+  if (ownBack) { coverDraw(x, ownBack, W, H); return c; }
+  const fx = S.flip === 'h' || S.flip === 'both', fy = S.flip === 'v' || S.flip === 'both';
+  const L0 = lay(W, H, fx, fy), { tw, th, tx, ty } = L0, ink = S.textColor, acc = S.accent;
+  x.save(); x.translate(fx ? W : 0, fy ? H : 0); x.scale(fx ? -1 : 1, fy ? -1 : 1); drawBG(x, W, H); x.restore();
+  x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+  const T = (i) => Math.round(tx(i)), V = (r) => Math.round(ty(r));
+
+  // top rail mirrored to the right, term on the left
+  if (S.rail) {
+    x.fillStyle = ink; x.fillRect(T(17), V(0.55), W - T(17), Math.round(th * 0.65));
+    x.fillStyle = acc; for (let i = 0; i < 3; i++) { const sx = tx(16.6 - i * 0.6) - tw * 0.5, y0 = ty(0.55), y1 = ty(1.2); x.beginPath(); x.moveTo(sx + tw * 0.25, y0); x.lineTo(sx + tw * 0.5, y0); x.lineTo(sx + tw * 0.25, y1); x.lineTo(sx, y1); x.fill(); }
+  }
+  if (S.term) { x.fillStyle = ink; x.font = `700 ${th * 0.5}px "${S.infoFont}"`; x.fillText(S.term.toUpperCase(), tx(1), ty(1.3)); }
+
+  // title: first word solid, the rest outline
+  const words = (S.backTitle || '').toUpperCase().split(/\s+/).filter(Boolean), w1 = words[0] || '', w2 = words.slice(1).join(' ');
+  let p = th * 1.7; const meas = () => { x.font = `700 ${p}px "${S.nameFont}"`; const a = x.measureText(w1 + ' ').width; x.font = `400 ${p}px "${S.ghostFont}"`; return a + x.measureText(w2).width; };
+  let tw0 = meas(); if (tw0 > tw * 22) { p *= tw * 22 / tw0; tw0 = meas(); }
+  const tX = (W - tw0) / 2, tY = ty(5.6);
+  x.font = `700 ${p}px "${S.nameFont}"`; x.fillStyle = ink; x.fillText(w1, tX, tY); const a1 = x.measureText(w1 + ' ').width;
+  if (w2) { x.font = `400 ${p}px "${S.ghostFont}"`; x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = Math.max(1, W / 700); x.fillText(w2, tX + a1, tY); x.strokeText(w2, tX + a1, tY); }
+  x.textAlign = 'center'; x.globalAlpha = .8; fit(x, ((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), S.infoFont, 400, tw * 20, th * 0.42, th * 0.25); x.fillText(((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), W / 2, ty(6.6)); x.globalAlpha = 1; x.textAlign = 'left';
+
+  // pixel glow ring behind the QR (tile-aligned, dithered)
+  const qc0 = 7, qr0 = 8, qn = 10;
+  if (S.qrGlow) {
+    const RG = rng(S.seed + 3);
+    for (let r = qr0 - 2; r < qr0 + qn + 2; r++) for (let cc = qc0 - 2; cc < qc0 + qn + 2; cc++) {
+      const inside = r >= qr0 && r < qr0 + qn && cc >= qc0 && cc < qc0 + qn; if (inside) continue;
+      const d = Math.max(qr0 - r, r - (qr0 + qn - 1), qc0 - cc, cc - (qc0 + qn - 1));
+      const pr = d === 1 ? 0.85 : 0.38; if (RG() > pr) continue;
+      x.globalAlpha = d === 1 ? 0.2 + RG() * 0.25 : 0.08 + RG() * 0.14; x.fillStyle = RG() > 0.75 ? S.band1Col : acc;
+      x.fillRect(T(cc), V(r), T(cc + 1) - T(cc), V(r + 1) - V(r));
+    }
+    x.globalAlpha = 1;
+  }
+  // QR
+  drawQRArt(x, qrText(), T(qc0), V(qr0), T(qc0 + qn) - T(qc0), W);
+  // brackets around the card
+  x.strokeStyle = ink; x.lineWidth = Math.max(1.5, W / 340);
+  [[qc0 - 0.35, qr0 - 0.35, 1, 1], [qc0 + qn + 0.35, qr0 - 0.35, -1, 1], [qc0 - 0.35, qr0 + qn + 0.35, 1, -1], [qc0 + qn + 0.35, qr0 + qn + 0.35, -1, -1]].forEach(([a, b, sx, sy]) => {
+    const X = tx(a), Y = ty(b), l = tw * 0.8; x.beginPath(); x.moveTo(X + sx * l, Y); x.lineTo(X, Y); x.lineTo(X, Y + sy * l); x.stroke();
+  });
+  x.textAlign = 'center'; x.fillStyle = ink;
+  x.font = `700 ${th * 0.46}px "${S.infoFont}"`; x.fillText((S.qrLabel || '').toUpperCase(), W / 2, ty(19.35));
+  x.globalAlpha = .8; x.font = `400 ${th * 0.4}px "${S.infoFont}"`; if (S.qrSub) x.fillText(S.qrSub.toUpperCase(), W / 2, ty(20.05)); x.globalAlpha = 1; x.textAlign = 'left';
+
+  // holder details (professional block)
+  let y = 21.4;
+  const lab = (t, X, Y) => { x.fillStyle = ink; x.globalAlpha = .65; x.font = `400 ${th * 0.32}px "${S.infoFont}"`; x.fillText(t, X, ty(Y)); x.globalAlpha = 1; };
+  const val = (t, X, Y, w, mx) => { x.fillStyle = ink; fit(x, t, S.infoFont, 700, w, th * mx, th * 0.26); x.fillText(t, X, ty(Y)); };
+  if (S.holder) {
+    lab('NAME', tx(1), y); val(nmFull().toUpperCase(), tx(1), y + 0.72, tw * 9.6, 0.56);
+    lab('POSITION', tx(1), y + 1.35); val(rlFull().toUpperCase(), tx(1), y + 2.05, tw * 9.6, 0.46);
+    lab('ID NO.', tx(1), y + 2.7); val(S.idno || '-', tx(1), y + 3.4, tw * 4.8, 0.44);
+    lab('SECTION', tx(6.2), y + 2.7); val((S.team || '-').toUpperCase(), tx(6.2), y + 3.4, tw * 4.4, 0.44);
+    y += 4.4;
+  }
+  // contact column: one tile per channel, stacked on the grid
+  const jobEnd = null;
+  const rows = S.backInfo === 'connect' ? MONO.filter(([k]) => S['sh_' + k] && S[k]) : [];
+  if (rows.length) {
+    const r0 = Math.ceil(y + 0.6);
+    x.fillStyle = ink; x.font = `700 ${th * 0.36}px "${S.infoFont}"`; x.globalAlpha = .75; x.fillText('CONNECT', tx(1), ty(r0 - 0.25)); x.globalAlpha = 1;
+    rows.forEach(([k, m], i) => {
+      const yy = r0 + i; x.fillStyle = i % 2 ? acc : ink; x.fillRect(T(1), V(yy), T(2) - T(1), V(yy + 1) - V(yy));
+      x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; fit(x, m, S.tagFont, 700, tw * 0.8, th * 0.46, th * 0.2); x.fillText(m, (T(1) + T(2)) / 2, (V(yy) + V(yy + 1)) / 2 + th * 0.03);
+      x.textAlign = 'left'; x.fillStyle = ink; fit(x, S[k], S.infoFont, 400, tw * 8.2, th * 0.42, th * 0.24); x.fillText(S[k], tx(2.45), (V(yy) + V(yy + 1)) / 2 + th * 0.03); x.textBaseline = 'alphabetic';
+    });
+  }
+  // return info
+  let y2 = jobEnd !== null ? Math.max(jobEnd + 0.7, 26) : rows.length ? Math.ceil(y + 0.6) + rows.length + 1 : y + 0.6;
+  if (S.ret) {
+    x.fillStyle = ink; x.font = `700 ${th * 0.4}px "${S.infoFont}"`; x.globalAlpha = .75; x.fillText('IF FOUND, RETURN TO', tx(1), ty(y2 + 0.45)); x.globalAlpha = 1;
+    x.font = `400 ${th * 0.42}px "${S.infoFont}"`; wrapText(x, S.ret.toUpperCase(), tw * 9.6).slice(0, 3).forEach((ln, i) => x.fillText(ln, tx(1), ty(y2 + 1.25) + i * th * 0.62));
+  }
+  // signature + fine print at the bottom
+  if (S.sig) { x.fillStyle = ink; x.fillRect(T(1), V(34.6), Math.round(tw * 9.5), Math.max(1, Math.round(W / 450))); x.globalAlpha = .7; x.font = `400 ${th * 0.34}px "${S.infoFont}"`; x.fillText('SIGNATURE', tx(1), ty(35.2)); x.globalAlpha = 1; }
+  if (S.fine) { x.fillStyle = ink; x.globalAlpha = .7; x.font = `400 ${th * 0.3}px "${S.infoFont}"`; wrapText(x, S.fine.toUpperCase(), tw * 9.6).slice(0, 3).forEach((ln, i) => x.fillText(ln, tx(1), ty(35.95) + i * th * 0.42)); x.globalAlpha = 1; }
+
+  // big asset, anchored to the bottom-right corner of the card
+  if (S.asset) {
+    const ax = tx(S.assetX), ay = ty(S.assetY), aw = W - ax, ah = H - ay;
+    if (assetImg) {
+      const k2 = Math.min(aw / assetImg.width, ah / assetImg.height) * S.assetScale / 100, w = assetImg.width * k2, h = assetImg.height * k2;
+      x.drawImage(assetImg, W - w, H - h, w, h);
+    } else if (S.assetOutline) {
+      x.save(); x.strokeStyle = rgba(ink, 0.5); x.lineWidth = Math.max(1, W / 450); x.setLineDash([th * 0.2, th * 0.14]); x.strokeRect(Math.round(ax), Math.round(ay), W, H); x.restore();
+      x.fillStyle = rgba(ink, 0.55); x.textAlign = 'center'; x.font = `700 ${th * 0.44}px "${S.infoFont}"`; x.fillText('ASSET', ax + aw / 2, ay + ah / 2 - th * 0.1);
+      x.font = `400 ${th * 0.32}px "${S.infoFont}"`; x.fillText('SITS ON THE BOTTOM RIGHT EDGE', ax + aw / 2, ay + ah / 2 + th * 0.5); x.textAlign = 'left';
+    }
+  }
+
+  // job description: free-floating top layer, above the asset, with an optional backdrop effect
+  if (S.job && S.jobDesc) {
+    const px = th * S.jobSize / 100, lh = px * 1.28; x.font = `700 ${px}px "${S.jobFont}"`;
+    const lines = wrapText(x, S.jobDesc, tw * S.jobW), X = tx(S.jobX), Y = ty(S.jobY);
+    if (S.jobBg !== 'none') {
+      const bw = Math.max(...lines.map(l => x.measureText(l).width)), pad = th * S.jobPad / 100;
+      const rx = Math.round(X - pad), ry = Math.round(Y - pad * 0.8), rw = Math.round(bw + pad * 2), rh = Math.round(lines.length * lh + pad * 1.4), n = Math.round(th * 0.22);
+      const clip = () => { x.beginPath(); x.moveTo(rx + n, ry); x.lineTo(rx + rw - n, ry); x.lineTo(rx + rw - n, ry + n); x.lineTo(rx + rw, ry + n); x.lineTo(rx + rw, ry + rh - n); x.lineTo(rx + rw - n, ry + rh - n); x.lineTo(rx + rw - n, ry + rh); x.lineTo(rx + n, ry + rh); x.lineTo(rx + n, ry + rh - n); x.lineTo(rx, ry + rh - n); x.lineTo(rx, ry + n); x.lineTo(rx + n, ry + n); x.closePath(); };
+      x.save(); clip(); x.clip();
+      if (S.jobBg === 'blur' || S.jobBg === 'pixel') {
+        const m = Math.round(th * 2), sx = Math.max(0, rx - m), sy = Math.max(0, ry - m), sw = Math.min(W, rx + rw + m) - sx, sh = Math.min(H, ry + rh + m) - sy;
+        const snap = mk(sw, sh); snap.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+        if (S.jobBg === 'blur') { x.filter = `blur(${th * S.jobBlur / 100}px)`; x.drawImage(snap, sx, sy); x.filter = 'none'; }
+        else { const k = Math.max(2, Math.round(th * S.jobBlur / 400)), sm = mk(Math.ceil(sw / k), Math.ceil(sh / k)); sm.getContext('2d').drawImage(snap, 0, 0, sm.width, sm.height); x.imageSmoothingEnabled = false; x.drawImage(sm, sx, sy, sm.width * k, sm.height * k); x.imageSmoothingEnabled = true; }
+      }
+      x.fillStyle = rgba(S.jobTint, S.jobTintA / 100); x.fillRect(rx, ry, rw, rh);
+      x.restore();
+      if (S.jobBorder) { x.save(); clip(); x.strokeStyle = rgba(S.accent, 0.75); x.lineWidth = Math.max(1, W / 450); x.stroke(); x.restore(); }
+    }
+    x.textBaseline = 'top'; x.fillStyle = S.jobCol;
+    if (S.jobShadow) { x.shadowColor = 'rgba(255,255,255,.85)'; x.shadowBlur = px * 0.5; }
+    lines.forEach((ln, i) => x.fillText(ln, X, Y + i * lh));
+    x.shadowColor = 'transparent'; x.shadowBlur = 0; x.textBaseline = 'alphabetic';
+  }
+  return c;
+}
+
+/* ---------------- mockup ---------------- */
+let noiseCv = null;
+function noise() {
+  if (noiseCv) return noiseCv; noiseCv = mk(128, 128); const x = noiseCv.getContext('2d'), d = x.createImageData(128, 128);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i+1] = d.data[i+2] = v; d.data[i+3] = 255; }
+  x.putImageData(d, 0, 0); return noiseCv;
+}
+function makeMockup(face, o) {
+  const W = face.width, Hh = face.height, pad = Math.round(W * 0.13);
+  const cw = W + pad * 2, ch = Hh + pad * 2, c = mk(cw, ch), x = c.getContext('2d');
+  const r = W * 0.0589, lam = o.mat === 'lam', m = lam ? W * 0.05 : 0, g = o.finish / 100;
+  const card = { x: pad, y: pad, w: W, h: Hh, r };
+  const outer = lam ? { x: pad - m, y: pad - m, w: W + 2*m, h: Hh + 2*m, r: r + m * 0.8 } : card;
+  const rr = (b, inset = 0) => { x.beginPath(); x.roundRect(b.x + inset, b.y + inset, b.w - 2*inset, b.h - 2*inset, Math.max(0, b.r - inset)); };
+
+  // shadow
+  x.save(); x.shadowColor = `rgba(30,12,70,${.32 + .14*g})`; x.shadowBlur = W * 0.07; x.shadowOffsetX = W * 0.012; x.shadowOffsetY = W * 0.035; x.fillStyle = '#000'; rr(outer); x.fill(); x.restore();
+  x.save(); x.globalCompositeOperation = 'destination-out'; rr(outer); x.fill(); x.restore();
+
+  // card thickness
+  x.save(); const t = W * 0.0065; x.translate(t * 0.7, t);
+  const eg = x.createLinearGradient(0, pad, 0, pad + Hh); eg.addColorStop(0, '#f4f1fb'); eg.addColorStop(1, '#b3aacd'); x.fillStyle = eg; rr(card); x.fill(); x.restore();
+
+  // face
+  x.save(); rr(card); x.clip(); x.drawImage(face, pad, pad);
+  if (g < 0.75) { x.globalAlpha = (0.75 - g) * 0.12; x.globalCompositeOperation = 'overlay'; x.fillStyle = x.createPattern(noise(), 'repeat'); x.fillRect(pad, pad, W, Hh); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; }
+  const sg = x.createLinearGradient(pad, pad, pad + W * 0.95, pad + Hh * 0.75);
+  sg.addColorStop(0, `rgba(255,255,255,${.30*g})`); sg.addColorStop(.26, `rgba(255,255,255,${.04*g})`); sg.addColorStop(.34, `rgba(255,255,255,${.26*g})`);
+  sg.addColorStop(.45, `rgba(255,255,255,${.02*g})`); sg.addColorStop(1, `rgba(10,0,40,${.08 + .06*g})`);
+  x.fillStyle = sg; x.fillRect(pad, pad, W, Hh); x.restore();
+  x.save(); rr(card); x.clip(); x.lineWidth = W * 0.012;
+  const bv = x.createLinearGradient(pad, pad, pad + W, pad + Hh); bv.addColorStop(0, 'rgba(255,255,255,.85)'); bv.addColorStop(.5, 'rgba(255,255,255,.12)'); bv.addColorStop(1, 'rgba(20,0,60,.38)');
+  x.strokeStyle = bv; rr(card); x.stroke(); x.restore();
+
+  // laminate pouch
+  if (lam) {
+    x.save(); rr(outer); x.clip();
+    x.fillStyle = 'rgba(255,255,255,.09)'; x.fillRect(0, 0, cw, ch);
+    x.beginPath(); x.roundRect(outer.x, outer.y, outer.w, outer.h, outer.r); x.roundRect(card.x, card.y, card.w, card.h, card.r);
+    x.fillStyle = 'rgba(255,255,255,.55)'; x.fill('evenodd');
+    x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = Math.max(1, W * 0.003); rr(outer, m * 0.5); x.stroke();
+    x.strokeStyle = 'rgba(90,70,140,.28)'; rr(outer, m * 0.5 + W * 0.004); x.stroke();
+    const pg = x.createLinearGradient(outer.x, outer.y, outer.x + outer.w * 0.95, outer.y + outer.h * 0.75);
+    pg.addColorStop(0, `rgba(255,255,255,${.26*g})`); pg.addColorStop(.3, `rgba(255,255,255,${.03*g})`); pg.addColorStop(.38, `rgba(255,255,255,${.22*g})`); pg.addColorStop(.5, `rgba(255,255,255,${.01*g})`); pg.addColorStop(1, 'rgba(10,0,40,.06)');
+    x.fillStyle = pg; x.fillRect(outer.x, outer.y, outer.w, outer.h);
+    x.filter = `blur(${W*0.006}px)`; x.strokeStyle = `rgba(255,255,255,${.10 + .12*g})`; x.lineCap = 'round'; x.lineWidth = W * 0.014;
+    x.beginPath(); x.moveTo(outer.x + outer.w*.12, outer.y + outer.h*.80); x.quadraticCurveTo(outer.x + outer.w*.5, outer.y + outer.h*.67, outer.x + outer.w*.96, outer.y + outer.h*.84); x.stroke();
+    x.beginPath(); x.moveTo(outer.x + outer.w*.04, outer.y + outer.h*.34); x.quadraticCurveTo(outer.x + outer.w*.3, outer.y + outer.h*.40, outer.x + outer.w*.55, outer.y + outer.h*.30); x.stroke();
+    x.filter = 'none'; x.restore();
+    x.save(); rr(outer); x.clip(); x.lineWidth = W * 0.01;
+    const pb = x.createLinearGradient(outer.x, outer.y, outer.x + outer.w, outer.y + outer.h); pb.addColorStop(0, 'rgba(255,255,255,.95)'); pb.addColorStop(.5, 'rgba(255,255,255,.35)'); pb.addColorStop(1, 'rgba(70,50,120,.4)');
+    x.strokeStyle = pb; rr(outer); x.stroke(); x.restore();
+  }
+
+  // slot punch
+  if (o.slot) {
+    const sw = W * 0.235, sh = W * 0.0593, scx = pad + W / 2, scy = pad + W * 0.105;
+    if (lam) { const k = m * 0.9; x.fillStyle = 'rgba(255,255,255,.72)'; x.beginPath(); x.roundRect(scx - sw/2 - k, scy - sh/2 - k, sw + 2*k, sh + 2*k, (sh + 2*k) / 2); x.fill(); }
+    x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.beginPath(); x.roundRect(scx - sw/2, scy - sh/2, sw, sh, sh / 2); x.fill(); x.restore();
+    x.save(); const sr = x.createLinearGradient(0, scy - sh/2, 0, scy + sh/2); sr.addColorStop(0, 'rgba(0,0,0,.45)'); sr.addColorStop(.5, 'rgba(0,0,0,0)'); sr.addColorStop(1, 'rgba(255,255,255,.75)');
+    x.strokeStyle = sr; x.lineWidth = W * 0.0045; x.beginPath(); x.roundRect(scx - sw/2, scy - sh/2, sw, sh, sh / 2); x.stroke(); x.restore();
+  }
+  return { cv: c, rect: outer, W: cw, H: ch };
+}
+
+/* ---------------- views ---------------- */
+const BD = { dark:'#15111f', lav:'#d9d2ee', desk:'#cdbb9f', white:'#ffffff', clear:null };
+const bdColor = () => S.backdrop === 'custom' ? S.bdcol : BD[S.backdrop];
+let faces = {}, mocks = {};
+let PSC = 1.5;
+
+function drawDesign() {
+  const f = S.side === 'front' ? faces.front : faces.back, cv = $('flat'), x = cv.getContext('2d');
+  cv.width = f.width; cv.height = f.height; x.drawImage(f, 0, 0);
+  const W = f.width, Hh = f.height, s = W / BGW;
+  if (S.showGrid) {
+    const fl = S.side === 'back' ? S.flip : 'none', fx = fl === 'h' || fl === 'both', fy = fl === 'v' || fl === 'both', L = lay(W, Hh, fx, fy);
+    x.strokeStyle = 'rgba(255,40,120,.7)'; x.lineWidth = Math.max(1, W / 700); x.beginPath();
+    for (let k = 0; k <= 24; k++) { x.moveTo(L.tx(k), 0); x.lineTo(L.tx(k), Hh); }
+    for (let k = 0; k <= 38; k++) { x.moveTo(0, L.ty(k)); x.lineTo(W, L.ty(k)); }
+    x.stroke();
+  }
+  if (S.showGuides) {
+    const r = W * 0.0589, sm = W * 0.037;
+    x.save(); x.lineWidth = Math.max(1.5, W / 450);
+    x.strokeStyle = 'rgba(255,60,120,.95)'; x.beginPath(); x.roundRect(x.lineWidth/2, x.lineWidth/2, W - x.lineWidth, Hh - x.lineWidth, r); x.stroke();
+    x.setLineDash([W/60, W/80]); x.strokeStyle = 'rgba(20,160,255,.95)'; x.beginPath(); x.roundRect(sm, sm, W - 2*sm, Hh - 2*sm, r * 0.5); x.stroke();
+    if (S.slot) { x.setLineDash([]); x.strokeStyle = 'rgba(255,60,120,.95)'; const sw = W * 0.235, sh = W * 0.0593; x.beginPath(); x.roundRect(W/2 - sw/2, W * 0.105 - sh/2, sw, sh, sh/2); x.stroke(); }
+    x.restore();
+  }
+}
+function paintSpec(el, m) {
+  const r = m.rect; el.style.left = r.x / m.W * 100 + '%'; el.style.top = r.y / m.H * 100 + '%'; el.style.width = r.w / m.W * 100 + '%'; el.style.height = r.h / m.H * 100 + '%';
+  el.style.borderRadius = (r.r / r.w * 100) + '% / ' + (r.r / r.h * 100) + '%'; el.style.opacity = (0.15 + S.finish / 100 * 0.6).toFixed(2);
+}
+function paintMock(cv, m) { cv.width = m.W; cv.height = m.H; cv.getContext('2d').drawImage(m.cv, 0, 0); }
+
+function update(ps) {
+  PSC = ps;
+  const W = Math.round(BGW * ps), Hh = Math.round(BGH * ps);
+  faces.front = drawFront(W, Hh); faces.back = drawBack(W, Hh);
+  const view = S.view;
+  $('stage').className = S.backdrop === 'clear' && view !== 'design' ? 'clear' : '';
+  $('stage').style.background = view === 'design' ? '#0f0c17' : (bdColor() || '');
+  if (S.backdrop === 'clear' && view !== 'design') $('stage').style.background = '';
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + view));
+  document.querySelectorAll('#segView button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  document.querySelectorAll('#segSide button').forEach(b => b.classList.toggle('on', b.dataset.s === S.side));
+  document.querySelectorAll('#segMat button').forEach(b => b.classList.toggle('on', b.dataset.m === S.mat));
+  $('segSide').style.display = view === 'both' ? 'none' : '';
+  $('segMat').style.display = view === 'design' ? 'none' : '';
+  $('hint').textContent = view === 'design' ? (S.side === 'back' ? 'Drag on the card to move the job description.' : 'Drag the photo to move it.') + ' Pink = card edge and slot, blue = 2 mm safe zone.' : view === '3d' ? ({hover:'Move the mouse over the card to tilt it. Front / Back flips it.',drag:'Drag the card to rotate it any way. Front / Back flips it.',spin:'Spinning. Change speed in Material and mockup.',fixed:'Set the angle with the 3D sliders in Material and mockup.'})[S.mode3d] : '';
+  if (view === 'design') drawDesign();
+  else {
+    const o = { mat: S.mat, finish: S.finish, slot: S.slot };
+    mocks.front = makeMockup(faces.front, o); mocks.back = makeMockup(faces.back, o);
+    if (view === '3d') {
+      paintMock($('mf'), mocks.front); paintMock($('mb'), mocks.back);
+      paintSpec($('mf').nextElementSibling, mocks.front); paintSpec($('mb').nextElementSibling, mocks.back);
+      $('card3d').style.setProperty('--ar', (mocks.front.W / mocks.front.H).toFixed(4)); apply3d();
+    } else { paintMock($('bf'), mocks.front); paintMock($('bb'), mocks.back); }
+  }
+}
+let tmr = null, refT = null;
+function schedule(fade) {
+  persist();
+  clearTimeout(tmr); clearTimeout(refT);
+  tmr = setTimeout(() => { update(fade ? 1 : 1.5); if (fade) refT = setTimeout(() => update(1.5), 350); }, 25);
+}
+
+/* 3D view: angles animated in JS, faces shown by the real angle (no backface-visibility reliance) */
+const V3KEYS = ['mode3d', 'rotX', 'rotY', 'tiltAmt', 'spin', 'zoom', 'persp'];
+const cur = { rx: 0, ry: 0 }, hov = { rx: 0, ry: 0 }; let spinA = 0, lastT = 0, dragR = null;
+const scene = $('scene'), card3d = $('card3d'), faceF = card3d.querySelector('.face.f'), faceB = card3d.querySelector('.face.b');
+function target3d() { return { rx: (S.mode3d === 'spin' ? S.rotX : S.rotX) + hov.rx, ry: S.rotY + (S.side === 'back' ? 180 : 0) + hov.ry + spinA }; }
+function apply3d() {
+  scene.style.perspective = S.persp + 'px';
+  card3d.style.transform = `scale(${S.zoom / 100}) rotateX(${cur.rx}deg) rotateY(${cur.ry}deg)`;
+  const front = Math.cos(cur.rx * Math.PI / 180) * Math.cos(cur.ry * Math.PI / 180) >= 0;
+  faceF.style.visibility = front ? 'visible' : 'hidden'; faceB.style.visibility = front ? 'hidden' : 'visible';
+  const ny = Math.sin(cur.ry * Math.PI / 180), nx = Math.sin(cur.rx * Math.PI / 180);
+  document.querySelectorAll('.spec').forEach(sp => { sp.style.setProperty('--mx', (50 - ny * 120 * (front ? 1 : -1)) + '%'); sp.style.setProperty('--my', (40 + nx * 120) + '%'); });
+  scene.classList.toggle('grab', S.mode3d === 'drag');
+}
+function loop3d(t) {
+  const dt = Math.min(0.05, (t - (lastT || t)) / 1000); lastT = t;
+  if (S.view === '3d') {
+    if (S.mode3d === 'spin') spinA += dt * S.spin;
+    const T = target3d(), k = S.mode3d === 'spin' || dragR ? 1 : 1 - Math.exp(-dt * 9);
+    cur.rx += (T.rx - cur.rx) * k; cur.ry += (T.ry - cur.ry) * k; apply3d();
+  }
+  requestAnimationFrame(loop3d);
+}
+requestAnimationFrame(loop3d);
+function setTilt() { /* kept for older calls */ }
+scene.addEventListener('pointermove', e => {
+  if (S.mode3d === 'hover') {
+    const r = scene.getBoundingClientRect(), nx = (e.clientX - r.left) / r.width - .5, ny = (e.clientY - r.top) / r.height - .5, a = S.tiltAmt / 100;
+    hov.rx = -ny * 30 * a; hov.ry = nx * 40 * a;
+  } else if (S.mode3d === 'drag' && dragR) { hov.ry = dragR.ry + (e.clientX - dragR.x) * 0.45; hov.rx = Math.max(-75, Math.min(75, dragR.rx - (e.clientY - dragR.y) * 0.35)); }
+});
+scene.addEventListener('pointerdown', e => { if (S.mode3d !== 'drag') return; scene.setPointerCapture(e.pointerId); dragR = { x: e.clientX, y: e.clientY, rx: hov.rx, ry: hov.ry }; });
+scene.addEventListener('pointerup', () => { dragR = null; });
+scene.addEventListener('pointerleave', () => { if (S.mode3d === 'hover') { hov.rx = 0; hov.ry = 0; } });
+function reset3d() { hov.rx = hov.ry = 0; spinA = 0; cur.rx = cur.ry = 0; ['rotX', 'rotY'].forEach(k => setS(k, 0)); setS('zoom', 100); setS('persp', 1300); setS('tiltAmt', 100); }
+
+/* design-view drag */
+let drag = null; const flat = $('flat');
+flat.onpointerdown = e => { if (S.side === 'back') { if (!S.job || ownBack) return; flat.setPointerCapture(e.pointerId); drag = { back: true, x: e.clientX, y: e.clientY, px: S.jobX, py: S.jobY }; flat.style.cursor = 'grabbing'; return; } if (ownFront) return; flat.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, px: S.px, py: S.py }; flat.style.cursor = 'grabbing'; };
+flat.onpointermove = e => { if (!drag) return; const r = flat.getBoundingClientRect(); if (drag.back) { setS('jobX', +(drag.px + (e.clientX - drag.x) / r.width * 24).toFixed(1)); setS('jobY', +(drag.py + (e.clientY - drag.y) / r.height * 38).toFixed(1)); schedule(); return; } setS('px', +(drag.px + (e.clientX - drag.x) / r.width * 100).toFixed(1)); setS('py', +(drag.py + (e.clientY - drag.y) / r.height * 100).toFixed(1)); schedule(true); };
+flat.onpointerup = () => { drag = null; flat.style.cursor = 'grab'; };
+
+/* toolbar */
+document.querySelectorAll('#segView button').forEach(b => b.onclick = () => { S.view = b.dataset.v; update(1.5); });
+document.querySelectorAll('#segSide button').forEach(b => b.onclick = () => { S.side = b.dataset.s; if (S.view === '3d') { if (S.mode3d !== 'spin') { spinA = 0; hov.ry = Math.round(hov.ry / 360) * 360; } document.querySelectorAll('#segSide button').forEach(x => x.classList.toggle('on', x.dataset.s === S.side)); } else update(PSC); });
+document.querySelectorAll('#segMat button').forEach(b => b.onclick = () => { S.mat = b.dataset.m; ctl.mat && ctl.mat.set(S.mat); update(1.5); });
+
+/* ---------------- handlers ---------------- */
+function trimImg(im) {
+  const c = mk(im.width, im.height), x = c.getContext('2d'); x.drawImage(im, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height).data; let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < c.height; y++) for (let i = 0; i < c.width; i++) { const o = (y * c.width + i) * 4;
+    if (d[o + 3] > 24 && !(d[o] > 242 && d[o + 1] > 242 && d[o + 2] > 242)) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  if (x1 < 0) return c;
+  const o = mk(x1 - x0 + 1, y1 - y0 + 1); o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height); return o;
+}
+function toCv(im, cap) { const k = Math.min(1, cap / Math.max(im.width, im.height)); const c = mk(Math.round(im.width * k), Math.round(im.height * k)); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c; }
+H.photo = im => { photoCv = toCv(im, 2400); storeImg('photo', photoCv); photoVer++; schedule(true); };
+H.noPhoto = () => { photoCv = placeholderPhoto(); storeImg('photo', null); photoVer++; schedule(true); };
+H.logo = im => { logoImg = trimImg(toCv(im, 1600)); storeImg('logo', logoImg); schedule(); };
+H.logo2 = im => { logo2Img = im; storeImg('logo2', im); schedule(); };
+H.noLogo2 = () => { logo2Img = null; storeImg('logo2', null); schedule(); };
+H.reset3d = () => reset3d();
+function syncCtl() { for (const k in ctl) ctl[k].set(S[k]); }
+H.saveJson = () => { const o = {}; for (const k in DEF) if (k !== 'view' && k !== 'side') o[k] = S[k]; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o, null, 2)], { type: 'application/json' })); a.download = 'id-settings.json'; a.click(); };
+H.loadJson = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json,application/json'; i.onchange = () => { const f = i.files[0]; if (!f) return; f.text().then(t => { try { const o = JSON.parse(t); for (const k in o) if (k in DEF && k !== 'view' && k !== 'side') S[k] = o[k]; syncCtl(); photoVer++; schedule(true); } catch (e) { alert('That file is not a settings file from this app.'); } }); }; i.click(); };
+H.resetAll = () => { if (!confirm('Reset all settings and remove saved images?')) return; try { localStorage.removeItem(STORE_KEY); } catch (e) {} ['photo','logo','logo2','logo3','logo4','asset','bg','ownFront','ownBack'].forEach(n => storeImg(n, null)); location.reload(); };
+H.asset = im => { assetImg = im; storeImg('asset', im); schedule(); };
+H.noAsset = () => { assetImg = null; storeImg('asset', null); schedule(); };
+H.logo3 = im => { logo3Img = trimImg(toCv(im, 1200)); storeImg('logo3', logo3Img); schedule(); };
+H.logo4 = im => { logo4Img = trimImg(toCv(im, 1200)); storeImg('logo4', logo4Img); schedule(); };
+H.noSlots = () => { logo3Img = logo4Img = null; storeImg('logo3', null); storeImg('logo4', null); schedule(); };
+H.bgImg = im => { bgCustom = im; storeImg('bg', im); setS('bgMode','custom'); schedule(true); };
+H.noLogo = () => { logoImg = null; storeImg('logo', null); schedule(); };
+H.shuffle = () => { S.seed = (S.seed * 7 + 13) % 997; schedule(true); };
+H.ownFront = im => { ownFront = im; storeImg('ownFront', im); S.side = 'front'; schedule(); };
+H.ownBack = im => { ownBack = im; storeImg('ownBack', im); schedule(); };
+H.noOwn = () => { ownFront = ownBack = null; storeImg('ownFront', null); storeImg('ownBack', null); schedule(); };
+function save(cv, name) { cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, 'image/png'); }
+const EW = () => Math.round(BGW * S.scale), EH = () => Math.round(BGH * S.scale);
+H.xFront = () => save(drawFront(EW(), EH()), `id-front-${EW()}x${EH()}.png`);
+H.xBack = () => save(drawBack(EW(), EH()), `id-back-${EW()}x${EH()}.png`);
+const mo = () => ({ mat: S.mat, finish: S.finish, slot: S.slot });
+H.xMF = () => save(withBackdrop(makeMockup(drawFront(EW(), EH()), mo()).cv), `id-front-mockup-${S.mat}.png`);
+H.xMB = () => save(withBackdrop(makeMockup(drawBack(EW(), EH()), mo()).cv), `id-back-mockup-${S.mat}.png`);
+H.xMBoth = () => {
+  const a = makeMockup(drawFront(EW(), EH()), mo()).cv, b = makeMockup(drawBack(EW(), EH()), mo()).cv, gap = Math.round(a.width * 0.04);
+  const c = mk(a.width + b.width + gap, a.height), x = c.getContext('2d'); x.drawImage(a, 0, 0); x.drawImage(b, a.width + gap, 0);
+  save(withBackdrop(c), `id-both-mockup-${S.mat}.png`);
+};
+function withBackdrop(cv) {
+  const col = bdColor(); if (!col) return cv;
+  const c = mk(cv.width, cv.height), x = c.getContext('2d'); x.fillStyle = col; x.fillRect(0, 0, c.width, c.height); x.drawImage(cv, 0, 0); return c;
+}
+
+/* ---------------- boot ---------------- */
+const ready = Promise.all([
+  new Promise(r => { bgImg.onload = r; bgImg.src = BG_SRC; }),
+  Promise.all(['400 20px "IntraNet"','700 20px "IntraNet"','400 20px "IntraNet Outline"','400 20px "IntraNet Italic"','700 20px "Pixelify Sans"','400 20px Silkscreen','700 20px Silkscreen','700 20px "Chakra Petch"','400 20px "Space Grotesk"','700 20px "Space Grotesk"'].map(f => document.fonts.load(f))).catch(() => {})
+]);
+ready.then(() => loadImgs()).then(list => {
+  (list || []).forEach(([k, im]) => { if (!im) return;
+    if (k === 'photo') { photoCv = toCv(im, 2400); photoVer++; } else if (k === 'logo') logoImg = im; else if (k === 'logo2') logo2Img = im;
+    else if (k === 'logo3') logo3Img = im; else if (k === 'logo4') logo4Img = im; else if (k === 'asset') assetImg = im; else if (k === 'bg') bgCustom = im;
+    else if (k === 'ownFront') ownFront = im; else if (k === 'ownBack') ownBack = im; });
+}).then(() => update(1.5), () => update(1.5));
+window.__ready = ready;
+</script>
+</body>
+</html>
