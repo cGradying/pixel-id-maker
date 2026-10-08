@@ -53,10 +53,9 @@ main { flex:1; min-width:0; display:flex; flex-direction:column; }
 .view.on { display:flex; }
 #flat { max-height:calc(100vh - 80px); max-width:calc(100vw - 400px); box-shadow:0 10px 40px rgba(0,0,0,.45); cursor:grab; touch-action:none; background:#fff; }
 #scene { perspective:1300px; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
-#card3d { --ar:.62; position:relative; height:min(calc(100vh - 100px), calc((100vw - 420px) / var(--ar))); aspect-ratio:var(--ar); transform-style:preserve-3d; will-change:transform; }
+#card3d { --ar:.62; position:relative; height:min(calc(100vh - 100px), calc((100vw - 420px) / var(--ar))); aspect-ratio:var(--ar); will-change:transform; }
 #scene.grab { cursor:grab; } #scene.grab:active { cursor:grabbing; }
-.face { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
-.face.b { transform:rotateY(180deg); }
+.face { position:absolute; inset:0; }
 .face canvas { width:100%; height:100%; display:block; }
 .spec { position:absolute; pointer-events:none; mix-blend-mode:soft-light; background:radial-gradient(circle at var(--mx,30%) var(--my,20%), rgba(255,255,255,.95), rgba(255,255,255,0) 52%); opacity:.6; }
 #v-both { gap:2.5%; padding:0 3%; }
@@ -3459,12 +3458,14 @@ const cur = { rx: 0, ry: 0 }, hov = { rx: 0, ry: 0 }; let spinA = 0, lastT = 0, 
 const scene = $('scene'), card3d = $('card3d'), faceF = card3d.querySelector('.face.f'), faceB = card3d.querySelector('.face.b');
 function target3d() { return { rx: (S.mode3d === 'spin' ? S.rotX : S.rotX) + hov.rx, ry: S.rotY + (S.side === 'back' ? 180 : 0) + hov.ry + spinA }; }
 function apply3d() {
+  // one visible face at a time, no backface tricks: works the same in Chrome, Safari and Firefox
   scene.style.perspective = S.persp + 'px';
-  card3d.style.transform = `scale(${S.zoom / 100}) rotateX(${cur.rx}deg) rotateY(${cur.ry}deg)`;
-  const front = Math.cos(cur.rx * Math.PI / 180) * Math.cos(cur.ry * Math.PI / 180) >= 0;
-  faceF.style.visibility = front ? 'visible' : 'hidden'; faceB.style.visibility = front ? 'hidden' : 'visible';
-  const ny = Math.sin(cur.ry * Math.PI / 180), nx = Math.sin(cur.rx * Math.PI / 180);
-  document.querySelectorAll('.spec').forEach(sp => { sp.style.setProperty('--mx', (50 - ny * 120 * (front ? 1 : -1)) + '%'); sp.style.setProperty('--my', (40 + nx * 120) + '%'); });
+  let a = ((cur.ry % 360) + 360) % 360; const back = a > 90 && a < 270;
+  const ry = back ? a - 180 : (a > 180 ? a - 360 : a);
+  card3d.style.transform = `scale(${S.zoom / 100}) rotateX(${cur.rx}deg) rotateY(${ry}deg)`;
+  faceF.style.display = back ? 'none' : 'block'; faceB.style.display = back ? 'block' : 'none';
+  const ny = Math.sin(ry * Math.PI / 180), nx = Math.sin(cur.rx * Math.PI / 180);
+  document.querySelectorAll('.spec').forEach(sp => { sp.style.setProperty('--mx', (50 - ny * 120) + '%'); sp.style.setProperty('--my', (40 + nx * 120) + '%'); });
   scene.classList.toggle('grab', S.mode3d === 'drag');
 }
 function loop3d(t) {
