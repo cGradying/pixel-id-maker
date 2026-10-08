@@ -78,6 +78,8 @@ main { flex:1; min-width:0; display:flex; flex-direction:column; }
 <script>__QR__</script>
 <script>
 const BG_SRC = "__BG__";
+const ALF_SRC = "__ALF__";
+const alfDefault = new Image(); alfDefault.src = ALF_SRC;
 const BGW = 637, BGH = 1012;
 const $ = id => document.getElementById(id);
 const smooth = (a,b,x) => { if (a===b) return x<a?0:1; const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
@@ -100,7 +102,7 @@ const DEF = {
   ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
   halftone:true, htSize:55, htAlpha:70, clusters:0, marks:false, readout:false, rail:true, sideLabel:'',
   band:false, bandNoise:60,
-  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
+  backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', peek:true, peekX:15.45, peekY:-0.3, peekSize:118, peekHands:true, connectTitle:'SOCIALS', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
   linkedin:'linkedin.com/in/yourname', github:'github.com/yourname', facebook:'facebook.com/yourorg', instagram:'@yourorg', discord:'', website:'yourorg.dev', email:'yourname@email.com',
   asset:true, assetOutline:true, assetX:11.5, assetY:21, assetScale:100, holder:false, connect:true, backInfo:'connect', job:true, jobFont:'Space Grotesk', jobX:11.6, jobY:21.6, jobW:11, jobSize:58, jobShadow:false, jobCol:'#14092e', jobBg:'blur', jobBlur:45, jobTint:'#ffffff', jobTintA:45, jobPad:55, jobBorder:false,
   jobDesc:'Leader of the visual identity of the club. Oversees design, branding, and media production, and approves all materials before release.',
@@ -137,7 +139,7 @@ function loadImgs() {
 const FADE_KEYS = ['psize','px','py','dir','start','end','detail','jit','feather','steps','pix','tint','tintc','gap','cols','rows','offx','offy','drip','onset','full','dom','mincov','scat','reach','sop','seed','halo','haloDx','haloDy','haloG','haloCol','haloDots'];
 
 const bgImg = new Image();
-let photoCv = null, photoVer = 0, logoImg = null, logo2Img = null, logo3Img = null, logo4Img = null, assetImg = null, bgCustom = null, ownFront = null, ownBack = null;
+let peekImg = null, photoCv = null, photoVer = 0, logoImg = null, logo2Img = null, logo3Img = null, logo4Img = null, assetImg = null, bgCustom = null, ownFront = null, ownBack = null;
 
 /* ---------------- sidebar spec ---------------- */
 const FONTS = ['IntraNet','IntraNet Outline','IntraNet Italic','Chakra Petch','Space Grotesk','Pixelify Sans','Silkscreen'];
@@ -204,11 +206,16 @@ const SECTIONS = [
  { title:'Bottom band', items:[
    {k:'band',t:'check',l:'Black pixel band with the role'}, {k:'bandNoise',t:'range',min:0,max:100,step:1,l:'Band pixel texture',u:'%'} ]},
  { title:'Back side', items:[
-   {k:'backTitle',t:'text',l:'Title (first word solid, rest outline)'}, {k:'term',t:'text',l:'Top left text (term / year)'},
+   {k:'backTitle',t:'text',l:'Title (first word solid, rest outline)'},
+   {k:'peek',t:'check',l:'Mascot peeking over the title'}, {k:'peekHands',t:'check',l:'Mascot hands on the letters'},
+   {k:'peekX',t:'range',min:2,max:22,step:0.1,l:'Mascot position (tiles)'}, {k:'peekY',t:'range',min:-1.5,max:1.5,step:0.05,l:'Mascot higher / lower'},
+   {k:'peekSize',t:'range',min:50,max:160,step:1,l:'Mascot size',u:'%'},
+   {t:'file',id:'peekFile',l:'Replace mascot image (head, transparent PNG)',h:'peekImg'}, {t:'btn',l:'Use default mascot',h:'noPeek',alt:true}, {k:'term',t:'text',l:'Top left text (term / year)'},
    {k:'qrMode',t:'select',l:'QR content',o:[['link','A link (below)'],['vcard','Contact card (vCard from your details)'],['id','ID number only']]},
    {k:'qr',t:'text',l:'QR link'}, {k:'qrLabel',t:'text',l:'Text under the QR'}, {k:'qrSub',t:'text',l:'Small line under that (blank = hide)'},
    {k:'qrStyle',t:'select',l:'QR pixel style',o:[['bevel','Bevel pixels'],['pixel','Flat pixels'],['dots','Dots']]},
    {k:'qrShade',t:'check',l:'Purple gradient shader on the QR'}, {k:'qrLogo',t:'check',l:'Logo in the QR center (uses header logo)'}, {k:'qrLogoSize',t:'range',min:60,max:120,step:1,l:'QR center logo size',u:'%'}, {k:'qrGlow',t:'check',l:'Pixel glow around the QR'},
+   {k:'connectTitle',t:'text',l:'Socials heading'}, {t:'note',l:'Upload each platform\'s official icon (PNG) to replace the letter tiles.'}, {t:'btn',l:'Remove all social icons',h:'noIcons',alt:true},
    {k:'holder',t:'check',l:'Holder details (name, position, ID, section)'},
    {k:'job',t:'check',l:'Job description (top layer, drag it in Design view)'}, {k:'jobDesc',t:'area',l:'Job description'},
    {k:'jobFont',t:'select',l:'Job description font',o:FONTS}, {k:'jobCol',t:'color',l:'Job description color'},
@@ -220,13 +227,13 @@ const SECTIONS = [
    {k:'jobPad',t:'range',min:10,max:150,step:1,l:'Backdrop padding',u:'%'}, {k:'jobBorder',t:'check',l:'Purple outline on the backdrop'},
    {k:'jobShadow',t:'check',l:'Soft glow behind the letters'},
    {k:'backInfo',t:'select',l:'Left column shows',o:[['connect','Connect list'],['none','Nothing']]},
-   {k:'sh_linkedin',t:'check',l:'Show LinkedIn'}, {k:'linkedin',t:'text',l:'LinkedIn'},
-   {k:'sh_github',t:'check',l:'Show GitHub'}, {k:'github',t:'text',l:'GitHub'},
-   {k:'sh_facebook',t:'check',l:'Show Facebook'}, {k:'facebook',t:'text',l:'Facebook'},
-   {k:'sh_instagram',t:'check',l:'Show Instagram'}, {k:'instagram',t:'text',l:'Instagram'},
-   {k:'sh_discord',t:'check',l:'Show Discord'}, {k:'discord',t:'text',l:'Discord'},
-   {k:'sh_website',t:'check',l:'Show website'}, {k:'website',t:'text',l:'Website'},
-   {k:'sh_email',t:'check',l:'Show email'}, {k:'email',t:'text',l:'Email'},
+   {k:'sh_linkedin',t:'check',l:'Show LinkedIn'}, {k:'linkedin',t:'text',l:'LinkedIn'}, {t:'file',id:'ic_linkedinFile',l:'LinkedIn icon',h:'ic_linkedin'},
+   {k:'sh_github',t:'check',l:'Show GitHub'}, {k:'github',t:'text',l:'GitHub'}, {t:'file',id:'ic_githubFile',l:'GitHub icon',h:'ic_github'},
+   {k:'sh_facebook',t:'check',l:'Show Facebook'}, {k:'facebook',t:'text',l:'Facebook'}, {t:'file',id:'ic_facebookFile',l:'Facebook icon',h:'ic_facebook'},
+   {k:'sh_instagram',t:'check',l:'Show Instagram'}, {k:'instagram',t:'text',l:'Instagram'}, {t:'file',id:'ic_instagramFile',l:'Instagram icon',h:'ic_instagram'},
+   {k:'sh_discord',t:'check',l:'Show Discord'}, {k:'discord',t:'text',l:'Discord'}, {t:'file',id:'ic_discordFile',l:'Discord icon',h:'ic_discord'},
+   {k:'sh_website',t:'check',l:'Show website'}, {k:'website',t:'text',l:'Website'}, {t:'file',id:'ic_websiteFile',l:'website icon',h:'ic_website'},
+   {k:'sh_email',t:'check',l:'Show email'}, {k:'email',t:'text',l:'Email'}, {t:'file',id:'ic_emailFile',l:'email icon',h:'ic_email'},
    {k:'asset',t:'check',l:'Big asset area on the white canvas'}, {t:'file',id:'assetFile',l:'Upload asset (PNG with transparency)',h:'asset'}, {t:'btn',l:'Remove asset',h:'noAsset',alt:true},
    {k:'assetOutline',t:'check',l:'Show placeholder outline when empty'},
    {k:'assetX',t:'range',min:0,max:20,step:0.5,l:'Asset area left edge (tiles)'}, {k:'assetY',t:'range',min:8,max:34,step:0.5,l:'Asset area top edge (tiles)'},
@@ -660,6 +667,7 @@ function drawQRArt(x, text, X, Y, size, W) {
   }
   return n;
 }
+const icons = {};
 const MONO = [['linkedin', 'IN'], ['github', 'GH'], ['facebook', 'FB'], ['instagram', 'IG'], ['discord', 'DC'], ['website', 'WW'], ['email', 'EM']];
 function drawBack(W, H) {
   const c = mk(W, H), x = c.getContext('2d');
@@ -682,9 +690,31 @@ function drawBack(W, H) {
   let p = th * 1.7; const meas = () => { x.font = `700 ${p}px "${S.nameFont}"`; const a = x.measureText(w1 + ' ').width; x.font = `400 ${p}px "${S.ghostFont}"`; return a + x.measureText(w2).width; };
   let tw0 = meas(); if (tw0 > tw * 22) { p *= tw * 22 / tw0; tw0 = meas(); }
   const tX = (W - tw0) / 2, tY = ty(5.6);
+  let peekHands = null;
+  const pim = peekImg || alfDefault;
+  if (S.peek && pim && pim.complete !== false && pim.width) {
+    x.font = `700 ${p}px "${S.nameFont}"`; const capTop = tY - x.measureText('M').actualBoundingBoxAscent;
+    const hw = tw * 3.4 * S.peekSize / 100, hh = hw * pim.height / pim.width, cx = tx(S.peekX);
+    const top = capTop - hh * 0.64 - th * 0.12 + th * S.peekY;
+    const pc = mk(W, Math.ceil(capTop + th)), px2 = pc.getContext('2d');
+    px2.drawImage(pim, cx - hw / 2, top, hw, hh);
+    const gm = px2.createLinearGradient(0, capTop - th * 0.12, 0, capTop + th * 0.12); gm.addColorStop(0, 'rgba(0,0,0,0)'); gm.addColorStop(1, 'rgba(0,0,0,1)');
+    px2.globalCompositeOperation = 'destination-out'; px2.fillStyle = gm; px2.fillRect(0, capTop - th * 0.12, W, pc.height); x.drawImage(pc, 0, 0);
+    peekHands = { cx, y: capTop, hw };
+  }
   x.font = `700 ${p}px "${S.nameFont}"`; x.fillStyle = ink; x.fillText(w1, tX, tY); const a1 = x.measureText(w1 + ' ').width;
   if (w2) { x.font = `400 ${p}px "${S.ghostFont}"`; x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = Math.max(1, W / 700); x.fillText(w2, tX + a1, tY); x.strokeText(w2, tX + a1, tY); }
-  x.textAlign = 'center'; x.globalAlpha = .8; fit(x, ((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), S.infoFont, 400, tw * 20, th * 0.42, th * 0.25); x.fillText(((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), W / 2, ty(6.6)); x.globalAlpha = 1; x.textAlign = 'left';
+  if (peekHands && S.peekHands) {
+    const { cx, y, hw } = peekHands, r = hw * 0.05, lw = Math.max(1, W / 480);
+    [-1, 1].forEach(sd => {
+      const hx = cx + sd * hw * 0.27;
+      x.fillStyle = '#1b2133'; x.strokeStyle = '#0d0f17'; x.lineWidth = lw;
+      x.beginPath(); x.ellipse(hx, y - r * 0.35, r * 2.0, r * 1.05, 0, Math.PI, 0); x.closePath(); x.fill(); x.stroke();
+      for (let i = -1; i <= 1; i++) { x.beginPath(); x.arc(hx + i * r * 1.2, y + r * 0.15, r * 0.72, 0, 6.2832); x.fill(); x.stroke(); }
+      x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.ellipse(hx - r * 0.7, y - r * 0.85, r * 0.6, r * 0.22, -0.3, 0, 6.2832); x.fill();
+    });
+  }
+  x.fillStyle = ink; x.textAlign = 'center'; x.globalAlpha = .8; fit(x, ((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), S.infoFont, 400, tw * 20, th * 0.42, th * 0.25); x.fillText(((S.org || '') + '  /  ' + (S.valid || '')).toUpperCase(), W / 2, ty(6.6)); x.globalAlpha = 1; x.textAlign = 'left';
 
   // pixel glow ring behind the QR (tile-aligned, dithered)
   const qc0 = 7, qr0 = 8, qn = 10;
@@ -726,10 +756,12 @@ function drawBack(W, H) {
   const rows = S.backInfo === 'connect' ? MONO.filter(([k]) => S['sh_' + k] && S[k]) : [];
   if (rows.length) {
     const r0 = Math.ceil(y + 0.6);
-    x.fillStyle = ink; x.font = `700 ${th * 0.36}px "${S.infoFont}"`; x.globalAlpha = .75; x.fillText('CONNECT', tx(1), ty(r0 - 0.25)); x.globalAlpha = 1;
+    x.fillStyle = ink; x.font = `700 ${th * 0.36}px "${S.infoFont}"`; x.globalAlpha = .75; x.fillText((S.connectTitle || '').toUpperCase(), tx(1), ty(r0 - 0.25)); x.globalAlpha = 1;
     rows.forEach(([k, m], i) => {
-      const yy = r0 + i; x.fillStyle = i % 2 ? acc : ink; x.fillRect(T(1), V(yy), T(2) - T(1), V(yy + 1) - V(yy));
-      x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; fit(x, m, S.tagFont, 700, tw * 0.8, th * 0.46, th * 0.2); x.fillText(m, (T(1) + T(2)) / 2, (V(yy) + V(yy + 1)) / 2 + th * 0.03);
+      const yy = r0 + i, ic = icons[k];
+      if (ic) { const bs = T(2) - T(1), pd = bs * 0.08, kk = Math.min((bs - pd * 2) / ic.width, (V(yy + 1) - V(yy) - pd * 2) / ic.height); x.drawImage(ic, T(1) + (bs - ic.width * kk) / 2, V(yy) + (V(yy + 1) - V(yy) - ic.height * kk) / 2, ic.width * kk, ic.height * kk); x.textBaseline = 'middle'; }
+      else { x.fillStyle = i % 2 ? acc : ink; x.fillRect(T(1), V(yy), T(2) - T(1), V(yy + 1) - V(yy));
+      x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; fit(x, m, S.tagFont, 700, tw * 0.8, th * 0.46, th * 0.2); x.fillText(m, (T(1) + T(2)) / 2, (V(yy) + V(yy + 1)) / 2 + th * 0.03); }
       x.textAlign = 'left'; x.fillStyle = ink; fit(x, S[k], S.infoFont, 400, tw * 8.2, th * 0.42, th * 0.24); x.fillText(S[k], tx(2.45), (V(yy) + V(yy + 1)) / 2 + th * 0.03); x.textBaseline = 'alphabetic';
     });
   }
@@ -976,10 +1008,14 @@ H.logo = im => { logoImg = trimImg(toCv(im, 1600)); storeImg('logo', logoImg); s
 H.logo2 = im => { logo2Img = im; storeImg('logo2', im); schedule(); };
 H.noLogo2 = () => { logo2Img = null; storeImg('logo2', null); schedule(); };
 H.reset3d = () => reset3d();
+MONO.forEach(([k]) => { H['ic_' + k] = im => { icons[k] = trimImg(toCv(im, 400)); storeImg('ic_' + k, icons[k]); schedule(); }; });
+H.noIcons = () => { MONO.forEach(([k]) => { delete icons[k]; storeImg('ic_' + k, null); }); schedule(); };
+H.peekImg = im => { peekImg = trimImg(toCv(im, 1400)); storeImg('peek', peekImg); schedule(); };
+H.noPeek = () => { peekImg = null; storeImg('peek', null); schedule(); };
 function syncCtl() { for (const k in ctl) ctl[k].set(S[k]); }
 H.saveJson = () => { const o = {}; for (const k in DEF) if (k !== 'view' && k !== 'side') o[k] = S[k]; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o, null, 2)], { type: 'application/json' })); a.download = 'id-settings.json'; a.click(); };
 H.loadJson = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.json,application/json'; i.onchange = () => { const f = i.files[0]; if (!f) return; f.text().then(t => { try { const o = JSON.parse(t); for (const k in o) if (k in DEF && k !== 'view' && k !== 'side') S[k] = o[k]; syncCtl(); photoVer++; schedule(true); } catch (e) { alert('That file is not a settings file from this app.'); } }); }; i.click(); };
-H.resetAll = () => { if (!confirm('Reset all settings and remove saved images?')) return; try { localStorage.removeItem(STORE_KEY); } catch (e) {} ['photo','logo','logo2','logo3','logo4','asset','bg','ownFront','ownBack'].forEach(n => storeImg(n, null)); location.reload(); };
+H.resetAll = () => { if (!confirm('Reset all settings and remove saved images?')) return; try { localStorage.removeItem(STORE_KEY); } catch (e) {} ['photo','logo','logo2','logo3','logo4','asset','bg','ownFront','ownBack','peek'].concat(MONO.map(m => 'ic_' + m[0])).forEach(n => storeImg(n, null)); location.reload(); };
 H.asset = im => { assetImg = im; storeImg('asset', im); schedule(); };
 H.noAsset = () => { assetImg = null; storeImg('asset', null); schedule(); };
 H.logo3 = im => { logo3Img = trimImg(toCv(im, 1200)); storeImg('logo3', logo3Img); schedule(); };
@@ -1017,7 +1053,7 @@ ready.then(() => loadImgs()).then(list => {
   (list || []).forEach(([k, im]) => { if (!im) return;
     if (k === 'photo') { photoCv = toCv(im, 2400); photoVer++; } else if (k === 'logo') logoImg = im; else if (k === 'logo2') logo2Img = im;
     else if (k === 'logo3') logo3Img = im; else if (k === 'logo4') logo4Img = im; else if (k === 'asset') assetImg = im; else if (k === 'bg') bgCustom = im;
-    else if (k === 'ownFront') ownFront = im; else if (k === 'ownBack') ownBack = im; });
+    else if (k === 'peek') peekImg = im; else if (k.startsWith('ic_')) icons[k.slice(3)] = im; else if (k === 'ownFront') ownFront = im; else if (k === 'ownBack') ownBack = im; });
 }).then(() => update(1.5), () => update(1.5));
 window.__ready = ready;
 </script>

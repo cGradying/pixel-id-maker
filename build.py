@@ -36,7 +36,8 @@ qr=open(A+'vendor/qrcode.js').read()
 assert '</script' not in qr
 bg=base64.b64encode(open(A+'pixel-bg.png','rb').read()).decode()
 html=open(ROOT+'src/id-maker.html').read()
-for k,v in [('__FONTCSS__',css),('__QR__',qr),('__ENGINE__',engine),('__BG__','data:image/png;base64,'+bg)]:
+alf=base64.b64encode(open(A+'alf-head.png','rb').read()).decode()
+for k,v in [('__ALF__','data:image/png;base64,'+alf),('__FONTCSS__',css),('__QR__',qr),('__ENGINE__',engine),('__BG__','data:image/png;base64,'+bg)]:
     html=html.replace(k,v)
 open(ROOT+'dist/pixel-id-maker.html','w').write(html)
 print(len(html)//1024,'KB')
