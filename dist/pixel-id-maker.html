@@ -2605,7 +2605,7 @@ const DEF = {
   pix:85, tint:55, tintc:'#9a5be8', dom:100, mincov:15, onset:60, gap:0, offx:0.8, offy:0.8, cols:24, rows:38,
   halo:true, haloCol:'#b79bf7', haloDx:-3, haloDy:-2.2, haloG:2.4, haloDots:true,
   bgMode:'builtin', bgSolid:'#f4eefc',
-  ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
+  nick:true, nickname:'Cigad', nickFont:'IntraNet', nickSize:150, nickGap:2.3, nickAlign:'right', nickAlpha:70, nickLetter:18, nickCol:'#7c3aed', ghost:true, ghostWord:'BUILDER', ghostRow:12.8, ghostW:1.6, ghostAlpha:42,
   halftone:true, htSize:55, htAlpha:70, clusters:0, marks:false, readout:false, rail:true, sideLabel:'',
   band:false, bandNoise:60,
   backTitle:'MEMBER ID', qr:'https://www.linkedin.com/in/yourname', qrMode:'link', qrStyle:'bevel', qrShade:true, qrLogo:true, qrGlow:true, qrLabel:'Scan to connect', connectTitle:'SOCIALS', iconStyle:'pixel', qrSub:'ID 2026-02815-MN-0', term:'A.Y. 2026 - 2027',
@@ -2697,6 +2697,10 @@ const SECTIONS = [
    {k:'bgMode',t:'select',l:'Background',o:[['builtin','Pixel grid (built-in)'],['custom','My own image'],['solid','Solid color']]},
    {t:'file',id:'bgFile',l:'Upload my background image',h:'bgImg'}, {k:'bgSolid',t:'color',l:'Solid color'},
    {k:'frame',t:'check',l:'Line box on the white area (fades into purple)'}, {k:'frameTop',t:'range',min:4,max:12,step:0.5,l:'Box top row'}, {k:'frameBot',t:'range',min:18,max:38,step:0.5,l:'Box bottom row (38 = card bottom)'}, {k:'frameW',t:'range',min:1,max:6,step:0.5,l:'Box line weight'}, {k:'frameCol',t:'color',l:'Box line color'},
+   {k:'nick',t:'check',l:'Nickname behind the photo'}, {k:'nickname',t:'text',l:'Nickname'},
+   {k:'nickFont',t:'select',l:'Nickname font',o:FONTS}, {k:'nickAlign',t:'select',l:'Nickname side',o:[['right','Right of the head'],['left','Left of the head'],['center','Center (behind the head)']]}, {k:'nickCol',t:'color',l:'Nickname color'},
+   {k:'nickSize',t:'range',min:50,max:300,step:1,l:'Nickname size',u:'%'}, {k:'nickGap',t:'range',min:-12,max:20,step:0.1,l:'Nickname position (rows below the big word)'},
+   {k:'nickAlpha',t:'range',min:5,max:100,step:1,l:'Nickname strength',u:'%'}, {k:'nickLetter',t:'range',min:0,max:60,step:1,l:'Nickname letter spacing',u:'%'},
    {k:'ghost',t:'check',l:'Giant outline word inside the box'}, {k:'ghostWord',t:'text',l:'Outline word'},
    {k:'ghostRow',t:'range',min:4,max:30,step:.1,l:'Outline word position',u:' rows'},
    {k:'ghostW',t:'range',min:0,max:5,step:.1,l:'Outline line weight'}, {k:'ghostAlpha',t:'range',min:5,max:100,step:1,l:'Outline strength',u:'%'},
@@ -2963,6 +2967,15 @@ function drawFront(W, H) {
     x.textAlign = 'center'; x.fillStyle = rgba(acc, S.ghostAlpha / 100 * 0.35); x.fillText(word, W / 2, ty(S.ghostRow));
     x.strokeStyle = rgba(acc, S.ghostAlpha / 100 * 1.2); x.lineWidth = Math.max(1, W / 450 * S.ghostW); x.lineJoin = 'round';
     x.strokeText(word, W / 2, ty(S.ghostRow)); x.textAlign = 'left';
+  }
+  // nickname, behind the photo under the big word
+  if (S.nick && S.nickname) {
+    const nk = S.nickname.toUpperCase(), al = S.nickAlign, f = fit(x, nk, S.nickFont, 700, tw * (al === 'center' ? 20 : 8.6), th * S.nickSize / 100, th * 0.5);
+    const y = ty(S.ghostRow + S.nickGap), nx = al === 'right' ? tx(22.7) : al === 'left' ? tx(1.3) : W / 2; x.textAlign = al;
+    if (S.nickLetter > 0 && 'letterSpacing' in x) x.letterSpacing = (f.px * S.nickLetter / 100) + 'px';
+    x.fillStyle = rgba(S.nickCol, S.nickAlpha / 100); x.fillText(nk, nx, y);
+    if ('letterSpacing' in x) x.letterSpacing = '0px';
+    x.textAlign = 'left';
   }
   // ruler ticks
   if (S.marks) {
